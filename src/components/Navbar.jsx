@@ -1,9 +1,19 @@
 import { Link, NavLink } from 'react-router-dom'
 
+const NAV_LINKS = [
+  { to: '/sports', label: 'Sports' },
+  { to: '/concerts', label: 'Concerts' },
+  { to: '/arts', label: 'Arts & Theater' },
+  { to: '/family', label: 'Family' },
+  { to: '/cities', label: 'Cities' },
+]
+
 export default function Navbar() {
   const linkClass = ({ isActive }) =>
-    `hidden sm:inline-block text-sm font-medium transition-colors ${
-      isActive ? 'text-brand' : 'text-gray-700 hover:text-brand'
+    `text-sm font-medium transition-colors ${
+      isActive
+        ? 'text-brand'
+        : 'text-gray-700 hover:text-brand'
     }`
 
   return (
@@ -26,21 +36,33 @@ export default function Navbar() {
           </div>
         </div>
 
-        <nav className="ml-auto flex items-center gap-4 md:gap-6">
-          <NavLink to="/sports" className={linkClass}>
-            Sports
-          </NavLink>
-          <NavLink to="/concerts" className={linkClass}>
-            Concerts
-          </NavLink>
-          <NavLink
-            to="/login"
-            className="rounded-lg bg-brand px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-brand-dark"
-          >
-            Login
-          </NavLink>
-        </nav>
+        <NavLink
+          to="/login"
+          className="ml-auto rounded-lg bg-brand px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-brand-dark"
+        >
+          Login
+        </NavLink>
       </div>
+
+      <nav className="border-t border-gray-100 bg-white">
+        <div className="mx-auto flex max-w-7xl items-center gap-6 overflow-x-auto px-4 py-2.5 md:px-6 [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
+          {NAV_LINKS.map((link) => (
+            <NavLink key={link.to} to={link.to} className={linkClass} end>
+              {({ isActive }) => (
+                <span
+                  className={`whitespace-nowrap border-b-2 pb-1.5 text-sm font-medium transition-colors ${
+                    isActive
+                      ? 'border-brand text-brand'
+                      : 'border-transparent text-gray-700 hover:text-brand'
+                  }`}
+                >
+                  {link.label}
+                </span>
+              )}
+            </NavLink>
+          ))}
+        </div>
+      </nav>
 
       <div className="border-t border-gray-100 px-4 py-2 md:hidden">
         <input
