@@ -78,12 +78,19 @@ export default function TicketSummary({
         </div>
       </dl>
 
-      <Link to="/checkout" className="mt-5 block">
-        <Button
-          className="w-full"
-          size="lg"
-          disabled={!tier}
-        >
+      <Link
+        to="/checkout"
+        state={
+          tier
+            ? { eventId: event.id, tierKey: tier.key, quantity }
+            : null
+        }
+        className="mt-5 block"
+        onClick={(e) => {
+          if (!tier) e.preventDefault()
+        }}
+      >
+        <Button className="w-full" size="lg" disabled={!tier}>
           {tier ? 'Proceed to Checkout' : 'Select a section'}
         </Button>
       </Link>

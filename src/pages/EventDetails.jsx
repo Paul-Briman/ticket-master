@@ -119,6 +119,11 @@ export default function EventDetails() {
       <MobileStickyCTA
         total={total}
         disabled={!selectedTier}
+        checkoutState={
+          selectedTier
+            ? { eventId: event.id, tierKey: selectedTier.key, quantity }
+            : null
+        }
       />
     </div>
   )
@@ -136,7 +141,7 @@ function Detail({ label, value }) {
   )
 }
 
-function MobileStickyCTA({ total, disabled }) {
+function MobileStickyCTA({ total, disabled, checkoutState }) {
   return (
     <div className="fixed inset-x-0 bottom-0 z-30 border-t border-gray-200 bg-white px-4 py-3 shadow-[0_-2px_8px_rgba(0,0,0,0.04)] md:hidden">
       <div className="flex items-center justify-between gap-3">
@@ -146,7 +151,14 @@ function MobileStickyCTA({ total, disabled }) {
             {formatPrice(total)}
           </p>
         </div>
-        <Link to={disabled ? '#' : '/checkout'} className="flex-1">
+        <Link
+          to={disabled ? '#' : '/checkout'}
+          state={disabled ? null : checkoutState}
+          onClick={(e) => {
+            if (disabled) e.preventDefault()
+          }}
+          className="flex-1"
+        >
           <Button className="w-full" disabled={disabled}>
             {disabled ? 'Select a section' : 'Checkout'}
           </Button>
