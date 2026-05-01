@@ -1,26 +1,25 @@
 import Button from './Button.jsx'
 
+const HERO_IMAGE =
+  'https://library.sportingnews.com/styles/crop_style_16_9_desktop_webp/s3/2025-11/World-Cup-2026-umbrella-FTR-%281%29.jpg.webp?itok=XaOY3f1S'
+
 export default function Hero() {
   return (
-    <section className="relative isolate overflow-hidden">
-      <div className="absolute inset-0 -z-10">
-        <img
-          src="https://picsum.photos/seed/stadium-crowd/1920/900"
-          alt="Stadium crowd"
-          className="h-full w-full object-cover"
-        />
-        <div className="absolute inset-0 bg-gradient-to-r from-black/70 via-black/55 to-black/30" />
-      </div>
+    <section
+      className="relative isolate w-full bg-cover bg-center bg-no-repeat"
+      style={{ backgroundImage: `url('${HERO_IMAGE}')` }}
+    >
+      <div className="absolute inset-0 bg-gradient-to-r from-black/70 via-black/55 to-black/40" />
 
-      <div className="mx-auto flex max-w-7xl flex-col items-center px-4 py-20 text-center md:px-6 md:py-28">
+      <div className="relative mx-auto flex min-h-[55vh] max-w-7xl flex-col items-center justify-center px-4 py-16 text-center md:min-h-[65vh] md:px-6 md:py-24">
         <span className="mb-4 rounded-full border border-white/30 bg-white/10 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-white backdrop-blur">
           Official Tickets
         </span>
 
-        <h1 className="text-3xl font-bold leading-tight text-white md:text-5xl">
+        <h1 className="text-3xl font-bold leading-tight text-white drop-shadow-md md:text-5xl">
           FIFA World Cup Tickets
         </h1>
-        <p className="mt-3 max-w-xl text-base text-gray-100 md:text-lg">
+        <p className="mt-3 max-w-xl text-base text-gray-100 drop-shadow md:text-lg">
           Secure your seat for the biggest matches of the year.
         </p>
 
