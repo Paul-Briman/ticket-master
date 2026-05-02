@@ -11,7 +11,7 @@ function initials(name = '') {
     .join('')
 }
 
-export default function UserMenu() {
+export default function UserMenu({ transparent = false }) {
   const { user, logout } = useAuth()
   const [open, setOpen] = useState(false)
   const ref = useRef(null)
@@ -48,9 +48,19 @@ export default function UserMenu() {
         onClick={() => setOpen((v) => !v)}
         aria-haspopup="menu"
         aria-expanded={open}
-        className="flex items-center gap-2 rounded-lg border border-gray-200 bg-white px-2 py-1.5 text-sm font-medium text-gray-700 transition-colors hover:border-gray-300 hover:text-brand"
+        className={`flex items-center gap-2 rounded-lg border px-2 py-1.5 text-sm font-medium transition-colors ${
+          transparent
+            ? 'border-white/40 bg-white/10 text-white hover:bg-white/20'
+            : 'border-gray-200 bg-white text-gray-700 hover:border-gray-300 hover:text-brand'
+        }`}
       >
-        <span className="flex h-7 w-7 items-center justify-center rounded-full bg-brand text-xs font-bold text-white">
+        <span
+          className={`flex h-7 w-7 items-center justify-center rounded-full text-xs font-bold ${
+            transparent
+              ? 'bg-white text-brand'
+              : 'bg-brand text-white'
+          }`}
+        >
           {initials(user.name) || 'U'}
         </span>
         <span className="hidden max-w-[140px] truncate sm:inline">
@@ -60,9 +70,9 @@ export default function UserMenu() {
           xmlns="http://www.w3.org/2000/svg"
           viewBox="0 0 20 20"
           fill="currentColor"
-          className={`h-4 w-4 text-gray-400 transition-transform ${
-            open ? 'rotate-180' : ''
-          }`}
+          className={`h-4 w-4 transition-transform ${
+            transparent ? 'text-white/70' : 'text-gray-400'
+          } ${open ? 'rotate-180' : ''}`}
         >
           <path
             fillRule="evenodd"

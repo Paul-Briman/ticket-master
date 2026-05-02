@@ -10,6 +10,7 @@ export default function Hero() {
       style={{ backgroundImage: `url('${HERO_IMAGE}')` }}
     >
       <div className="absolute inset-0 bg-gradient-to-r from-black/70 via-black/55 to-black/40" />
+      <div className="absolute inset-x-0 top-0 h-32 bg-gradient-to-b from-brand/70 to-transparent" />
 
       <div className="relative mx-auto flex min-h-[55vh] max-w-7xl flex-col items-center justify-center px-4 py-16 text-center md:min-h-[65vh] md:px-6 md:py-24">
         <span className="mb-4 rounded-full border border-white/30 bg-white/10 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-white backdrop-blur">
