@@ -1,12 +1,12 @@
 import { Routes, Route } from 'react-router-dom'
 import MainLayout from './layouts/MainLayout.jsx'
+import AdminLayout from './layouts/AdminLayout.jsx'
 import ProtectedRoute from './components/ProtectedRoute.jsx'
 import Home from './pages/Home.jsx'
 import EventDetails from './pages/EventDetails.jsx'
 import Login from './pages/Login.jsx'
 import Signup from './pages/Signup.jsx'
 import Checkout from './pages/Checkout.jsx'
-import AdminDashboard from './pages/AdminDashboard.jsx'
 import Sports from './pages/Sports.jsx'
 import Concerts from './pages/Concerts.jsx'
 import Arts from './pages/Arts.jsx'
@@ -14,6 +14,10 @@ import Family from './pages/Family.jsx'
 import Cities from './pages/Cities.jsx'
 import CityPage from './pages/CityPage.jsx'
 import MyTickets from './pages/MyTickets.jsx'
+import AdminOverview from './pages/admin/Overview.jsx'
+import AdminEvents from './pages/admin/AdminEvents.jsx'
+import AdminUsers from './pages/admin/AdminUsers.jsx'
+import AdminOrders from './pages/admin/AdminOrders.jsx'
 
 export default function App() {
   return (
@@ -43,14 +47,6 @@ export default function App() {
           }
         />
         <Route
-          path="/admin"
-          element={
-            <ProtectedRoute>
-              <AdminDashboard />
-            </ProtectedRoute>
-          }
-        />
-        <Route
           path="/my-tickets"
           element={
             <ProtectedRoute>
@@ -58,6 +54,20 @@ export default function App() {
             </ProtectedRoute>
           }
         />
+
+        <Route
+          path="/admin"
+          element={
+            <ProtectedRoute>
+              <AdminLayout />
+            </ProtectedRoute>
+          }
+        >
+          <Route index element={<AdminOverview />} />
+          <Route path="events" element={<AdminEvents />} />
+          <Route path="users" element={<AdminUsers />} />
+          <Route path="orders" element={<AdminOrders />} />
+        </Route>
       </Route>
     </Routes>
   )
