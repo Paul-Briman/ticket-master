@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { NavLink, Outlet } from 'react-router-dom'
 import { AdminStoreProvider } from '../lib/adminStore.jsx'
+import { useAuth } from '../lib/auth.jsx'
 
 const NAV = [
   { to: '/admin', label: 'Dashboard', end: true, icon: '📊' },
@@ -11,10 +12,37 @@ const NAV = [
 
 export default function AdminLayout() {
   const [mobileOpen, setMobileOpen] = useState(false)
+  const { user } = useAuth()
 
   return (
     <AdminStoreProvider>
       <div className="bg-gray-50">
+        <div className="border-b border-gray-200 bg-white">
+          <div className="mx-auto flex max-w-7xl flex-wrap items-center justify-between gap-3 px-4 py-4 md:px-6">
+            <div className="flex items-center gap-3">
+              <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-brand text-white">
+                🛡️
+              </span>
+              <div>
+                <p className="text-base font-bold text-gray-900">Admin Panel</p>
+                <p className="text-xs text-gray-500">
+                  Manage events, users, and orders
+                </p>
+              </div>
+            </div>
+            {user && (
+              <div className="text-right">
+                <p className="text-xs font-semibold uppercase tracking-wide text-gray-400">
+                  Signed in as
+                </p>
+                <p className="text-sm font-medium text-gray-800">
+                  {user.email}
+                </p>
+              </div>
+            )}
+          </div>
+        </div>
+
         <div className="mx-auto flex max-w-7xl flex-col gap-6 px-4 py-6 md:flex-row md:px-6 md:py-8">
           <button
             type="button"

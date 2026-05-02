@@ -71,6 +71,23 @@ export default function Navbar() {
               )}
             </NavLink>
           ))}
+
+          {user?.role === 'admin' && (
+            <NavLink to="/admin" className={linkClass}>
+              {({ isActive }) => (
+                <span
+                  className={`flex items-center gap-1.5 whitespace-nowrap border-b-2 pb-1.5 text-sm font-medium transition-colors ${
+                    isActive
+                      ? 'border-brand text-brand'
+                      : 'border-transparent text-gray-700 hover:text-brand'
+                  }`}
+                >
+                  <span aria-hidden>🛡️</span>
+                  Admin
+                </span>
+              )}
+            </NavLink>
+          )}
         </div>
       </nav>
 
