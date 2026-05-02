@@ -1,4 +1,6 @@
 import { Link, NavLink } from 'react-router-dom'
+import { useAuth } from '../lib/auth.jsx'
+import UserMenu from './UserMenu.jsx'
 
 const NAV_LINKS = [
   { to: '/sports', label: 'Sports' },
@@ -9,6 +11,8 @@ const NAV_LINKS = [
 ]
 
 export default function Navbar() {
+  const { user } = useAuth()
+
   const linkClass = ({ isActive }) =>
     `text-sm font-medium transition-colors ${
       isActive
@@ -36,12 +40,18 @@ export default function Navbar() {
           </div>
         </div>
 
-        <NavLink
-          to="/login"
-          className="ml-auto rounded-lg bg-brand px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-brand-dark"
-        >
-          Login
-        </NavLink>
+        <div className="ml-auto">
+          {user ? (
+            <UserMenu />
+          ) : (
+            <NavLink
+              to="/login"
+              className="rounded-lg bg-brand px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-brand-dark"
+            >
+              Login
+            </NavLink>
+          )}
+        </div>
       </div>
 
       <nav className="border-t border-gray-100 bg-white">
