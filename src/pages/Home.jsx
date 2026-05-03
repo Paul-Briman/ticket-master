@@ -20,7 +20,7 @@ export default function Home() {
 
       <Section
         title="Popular World Cup Matches"
-        subtitle="Don\u2019t miss out on the biggest stage in football."
+        subtitle="Don't miss out on the biggest stage in football."
         seeAllHref="/sports"
       >
         <CardScroller>
