@@ -8,7 +8,7 @@ import EventCard from '../components/EventCard.jsx'
 import CardScroller from '../components/CardScroller.jsx'
 import Button from '../components/Button.jsx'
 import { EVENTS } from '../data/events.js'
-import { formatPrice, getSeatTiers, SERVICE_FEE_RATE } from '../lib/price.js'
+import { formatPrice, getSeatOptions, SERVICE_FEE_RATE } from '../lib/price.js'
 
 export default function EventDetails() {
   const { id } = useParams()
@@ -18,7 +18,7 @@ export default function EventDetails() {
     window.scrollTo({ top: 0, behavior: 'auto' })
   }, [id])
 
-  const tiers = useMemo(() => (event ? getSeatTiers(event) : []), [event])
+  const options = useMemo(() => (event ? getSeatOptions(event) : []), [event])
   const [selectedKey, setSelectedKey] = useState(null)
   const [quantity, setQuantity] = useState(1)
 
@@ -44,8 +44,8 @@ export default function EventDetails() {
     )
   }
 
-  const selectedTier = tiers.find((t) => t.key === selectedKey) || null
-  const subtotal = (selectedTier?.price || 0) * quantity
+  const selectedOption = options.find((o) => o.key === selectedKey) || null
+  const subtotal = (selectedOption?.price || 0) * quantity
   const total = subtotal + subtotal * SERVICE_FEE_RATE
 
   const related = EVENTS.filter(
@@ -82,7 +82,7 @@ export default function EventDetails() {
 
               <SeatSelector
                 event={event}
-                tiers={tiers}
+                options={options}
                 selectedKey={selectedKey}
                 onSelect={setSelectedKey}
               />
@@ -91,7 +91,7 @@ export default function EventDetails() {
             <div className="lg:sticky lg:top-32 lg:self-start">
               <TicketSummary
                 event={event}
-                tier={selectedTier}
+                option={selectedOption}
                 quantity={quantity}
                 onQuantityChange={setQuantity}
               />
@@ -118,10 +118,10 @@ export default function EventDetails() {
 
       <MobileStickyCTA
         total={total}
-        disabled={!selectedTier}
+        disabled={!selectedOption}
         checkoutState={
-          selectedTier
-            ? { eventId: event.id, tierKey: selectedTier.key, quantity }
+          selectedOption
+            ? { eventId: event.id, optionKey: selectedOption.key, quantity }
             : null
         }
       />

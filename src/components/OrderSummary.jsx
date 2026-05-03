@@ -1,7 +1,7 @@
-import { formatPrice, SERVICE_FEE_RATE } from '../lib/price.js'
+import { formatPrice, optionLabel, SERVICE_FEE_RATE } from '../lib/price.js'
 
-export default function OrderSummary({ event, tier, quantity }) {
-  const subtotal = (tier?.price || 0) * quantity
+export default function OrderSummary({ event, option, quantity }) {
+  const subtotal = (option?.price || 0) * quantity
   const fee = subtotal * SERVICE_FEE_RATE
   const total = subtotal + fee
 
@@ -26,8 +26,9 @@ export default function OrderSummary({ event, tier, quantity }) {
         </div>
 
         <dl className="mt-4 space-y-2 text-sm">
-          <Row label="Section" value={tier?.name || '—'} />
-          <Row label="Price per ticket" value={formatPrice(tier?.price || 0)} />
+          <Row label="Section" value={option ? optionLabel(option) : '—'} />
+          <Row label="Tier" value={option?.tierLabel || '—'} />
+          <Row label="Price per ticket" value={formatPrice(option?.price || 0)} />
           <Row label="Quantity" value={`× ${quantity}`} />
         </dl>
 
@@ -54,12 +55,12 @@ export default function OrderSummary({ event, tier, quantity }) {
 function Row({ label, value, muted }) {
   return (
     <div
-      className={`flex items-center justify-between ${
+      className={`flex items-center justify-between gap-3 ${
         muted ? 'text-gray-500' : 'text-gray-700'
       }`}
     >
-      <dt>{label}</dt>
-      <dd className="font-medium">{value}</dd>
+      <dt className="shrink-0">{label}</dt>
+      <dd className="truncate text-right font-medium">{value}</dd>
     </div>
   )
 }

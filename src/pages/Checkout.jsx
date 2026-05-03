@@ -5,7 +5,7 @@ import Input from '../components/Input.jsx'
 import OrderSummary from '../components/OrderSummary.jsx'
 import CryptoPayment from '../components/CryptoPayment.jsx'
 import { EVENTS } from '../data/events.js'
-import { getSeatTiers } from '../lib/price.js'
+import { getSeatOptions } from '../lib/price.js'
 
 export default function Checkout() {
   const location = useLocation()
@@ -19,14 +19,14 @@ export default function Checkout() {
     return EVENTS[0]
   }, [state.eventId])
 
-  const tier = useMemo(() => {
-    const tiers = getSeatTiers(event)
-    if (state.tierKey) {
-      const match = tiers.find((t) => t.key === state.tierKey)
+  const option = useMemo(() => {
+    const options = getSeatOptions(event)
+    if (state.optionKey) {
+      const match = options.find((o) => o.key === state.optionKey)
       if (match) return match
     }
-    return tiers[1] || tiers[0]
-  }, [event, state.tierKey])
+    return options[2] || options[0]
+  }, [event, state.optionKey])
 
   const quantity = state.quantity || 2
 
@@ -129,7 +129,7 @@ export default function Checkout() {
           </div>
 
           <div className="lg:sticky lg:top-32 lg:self-start">
-            <OrderSummary event={event} tier={tier} quantity={quantity} />
+            <OrderSummary event={event} option={option} quantity={quantity} />
           </div>
         </form>
       </div>

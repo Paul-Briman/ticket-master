@@ -1,14 +1,14 @@
 import { Link } from 'react-router-dom'
 import Button from './Button.jsx'
-import { formatPrice, SERVICE_FEE_RATE } from '../lib/price.js'
+import { formatPrice, optionLabel, SERVICE_FEE_RATE } from '../lib/price.js'
 
 export default function TicketSummary({
   event,
-  tier,
+  option,
   quantity,
   onQuantityChange,
 }) {
-  const subtotal = (tier?.price || 0) * quantity
+  const subtotal = (option?.price || 0) * quantity
   const fee = subtotal * SERVICE_FEE_RATE
   const total = subtotal + fee
 
@@ -32,12 +32,18 @@ export default function TicketSummary({
         <p className="text-xs font-semibold uppercase tracking-wide text-gray-500">
           Selected Section
         </p>
-        <p className="mt-1 text-sm font-semibold text-gray-900">
-          {tier ? tier.name : 'No section selected'}
-        </p>
-        {tier && (
-          <p className="text-xs text-gray-500">
-            {formatPrice(tier.price)} per ticket
+        {option ? (
+          <>
+            <p className="mt-1 text-sm font-semibold text-gray-900">
+              {optionLabel(option)}
+            </p>
+            <p className="text-xs text-gray-500">
+              {option.tierLabel} · {formatPrice(option.price)} per ticket
+            </p>
+          </>
+        ) : (
+          <p className="mt-1 text-sm font-semibold text-gray-400">
+            No section selected
           </p>
         )}
       </div>
@@ -81,17 +87,17 @@ export default function TicketSummary({
       <Link
         to="/checkout"
         state={
-          tier
-            ? { eventId: event.id, tierKey: tier.key, quantity }
+          option
+            ? { eventId: event.id, optionKey: option.key, quantity }
             : null
         }
         className="mt-5 block"
         onClick={(e) => {
-          if (!tier) e.preventDefault()
+          if (!option) e.preventDefault()
         }}
       >
-        <Button className="w-full" size="lg" disabled={!tier}>
-          {tier ? 'Proceed to Checkout' : 'Select a section'}
+        <Button className="w-full" size="lg" disabled={!option}>
+          {option ? 'Proceed to Checkout' : 'Select a section'}
         </Button>
       </Link>
 
