@@ -1,5 +1,9 @@
 import SeatingMap from './SeatingMap.jsx'
-import { formatPrice, optionLabel } from '../lib/price.js'
+import {
+  availabilityColors,
+  formatPrice,
+  optionLabel,
+} from '../lib/price.js'
 
 const TIER_PILL = {
   vip: 'bg-blue-600 text-white',
@@ -8,11 +12,6 @@ const TIER_PILL = {
   'front-row': 'bg-blue-600 text-white',
   floor: 'bg-blue-100 text-blue-700',
   ga: 'bg-gray-100 text-gray-700',
-}
-
-const AVAILABILITY_STYLE = {
-  limited: 'text-amber-600',
-  hot: 'text-red-600',
 }
 
 export default function SeatSelector({
@@ -56,68 +55,90 @@ export default function SeatSelector({
             Available Sections ({options.length})
           </p>
           <ul className="flex flex-col gap-2">
-            {options.map((opt) => {
-              const isSelected = opt.key === selectedKey
-              return (
-                <li key={opt.key}>
-                  <button
-                    type="button"
-                    onClick={() => onSelect(opt.key)}
-                    className={`flex w-full items-center justify-between gap-3 rounded-lg border-2 p-3 text-left transition-all duration-150 ${
-                      isSelected
-                        ? 'border-brand bg-blue-50/60 shadow-sm'
-                        : 'border-gray-200 bg-white hover:-translate-y-0.5 hover:border-gray-300 hover:shadow-sm'
-                    }`}
-                  >
-                    <div className="min-w-0 flex-1">
-                      <div className="flex items-center gap-2">
-                        <span className="truncate text-sm font-semibold text-gray-900">
-                          {optionLabel(opt)}
-                        </span>
-                        <span
-                          className={`shrink-0 rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide ${
-                            TIER_PILL[opt.tier] || TIER_PILL.standard
-                          }`}
-                        >
-                          {opt.tierLabel}
-                        </span>
-                      </div>
-                      <div className="mt-1 flex items-center gap-2 text-xs">
-                        {opt.availability ? (
-                          <span
-                            className={`font-medium ${
-                              AVAILABILITY_STYLE[opt.availabilityType] ||
-                              'text-gray-500'
-                            }`}
-                          >
-                            {opt.availability}
-                          </span>
-                        ) : (
-                          <span className="text-gray-400">Available</span>
-                        )}
-                        {isSelected && (
-                          <span className="text-xs font-semibold text-brand">
-                            ✓ Selected
-                          </span>
-                        )}
-                      </div>
-                    </div>
-
-                    <div className="shrink-0 text-right">
-                      <span className="block text-base font-bold text-brand">
-                        {formatPrice(opt.price)}
-                      </span>
-                      <span className="text-[10px] uppercase tracking-wide text-gray-400">
-                        per ticket
-                      </span>
-                    </div>
-                  </button>
-                </li>
-              )
-            })}
+            {options.map((opt) => (
+              <li key={opt.key}>
+                <OptionRow
+                  option={opt}
+                  selected={opt.key === selectedKey}
+                  onSelect={onSelect}
+                />
+              </li>
+            ))}
           </ul>
         </div>
       </div>
     </section>
+  )
+}
+
+function OptionRow({ option, selected, onSelect }) {
+  const colors = availabilityColors(option.availabilityPercent)
+  const filled = 100 - option.availabilityPercent
+
+  return (
+    <button
+      type="button"
+      onClick={() => onSelect(option.key)}
+      className={`flex w-full items-center justify-between gap-3 rounded-lg border-2 p-3 text-left transition-all duration-150 ${
+        selected
+          ? 'border-brand bg-blue-50/60 shadow-sm'
+          : 'border-gray-200 bg-white hover:-translate-y-0.5 hover:border-gray-300 hover:shadow-sm'
+      }`}
+    >
+      <div className="min-w-0 flex-1">
+        <div className="flex items-center gap-2">
+          <span className="truncate text-sm font-semibold text-gray-900">
+            {optionLabel(option)}
+          </span>
+          <span
+            className={`shrink-0 rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide ${
+              TIER_PILL[option.tier] || TIER_PILL.standard
+            }`}
+          >
+            {option.tierLabel}
+          </span>
+        </div>
+
+        <div className="mt-2 flex items-center gap-2">
+          <div className="h-1.5 flex-1 overflow-hidden rounded-full bg-gray-100">
+            <div
+              className={`h-full rounded-full transition-all duration-300 ${colors.fill}`}
+              style={{ width: `${filled}%` }}
+            />
+          </div>
+          <span className={`shrink-0 text-xs font-semibold ${colors.text}`}>
+            {option.availabilityPercent}% remaining
+          </span>
+        </div>
+
+        <div className="mt-1 flex flex-wrap items-center gap-x-1.5 gap-y-0.5 text-xs">
+          <span className={`font-medium ${colors.text}`}>
+            {option.availabilityLabel}
+          </span>
+          {option.urgency && (
+            <>
+              <span className="text-gray-300">·</span>
+              <span className="font-semibold text-red-600">
+                {option.urgency}
+              </span>
+            </>
+          )}
+          {selected && (
+            <span className="ml-auto text-xs font-semibold text-brand">
+              ✓ Selected
+            </span>
+          )}
+        </div>
+      </div>
+
+      <div className="shrink-0 text-right">
+        <span className="block text-base font-bold text-brand">
+          {formatPrice(option.price)}
+        </span>
+        <span className="text-[10px] uppercase tracking-wide text-gray-400">
+          per ticket
+        </span>
+      </div>
+    </button>
   )
 }
