@@ -1,6 +1,7 @@
 import { Link } from 'react-router-dom'
 import StatCard from '../../components/admin/StatCard.jsx'
 import { useAdminStore } from '../../lib/adminStore.jsx'
+import { formatPrice } from '../../lib/price.js'
 
 function readUserCount() {
   try {
@@ -109,7 +110,7 @@ export default function Overview() {
                   </p>
                 </div>
                 <span className="shrink-0 text-sm font-semibold text-gray-900">
-                  {o.total}
+                  {typeof o.total === 'number' ? formatPrice(o.total) : o.total}
                 </span>
               </li>
             ))}

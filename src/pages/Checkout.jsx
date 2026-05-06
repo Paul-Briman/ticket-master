@@ -5,11 +5,15 @@ import Input from '../components/Input.jsx'
 import OrderSummary from '../components/OrderSummary.jsx'
 import CryptoPayment from '../components/CryptoPayment.jsx'
 import { EVENTS } from '../data/events.js'
-import { getSeatOptions } from '../lib/price.js'
+import { getSeatOptions, SERVICE_FEE_RATE, formatPrice } from '../lib/price.js'
+import { useAdminStore } from '../lib/adminStore.jsx'
+import { useAuth } from '../lib/auth.jsx'
 
 export default function Checkout() {
   const location = useLocation()
   const state = location.state || {}
+  const { createOrder } = useAdminStore()
+  const { user } = useAuth()
 
   const event = useMemo(() => {
     if (state.eventId) {
@@ -30,21 +34,51 @@ export default function Checkout() {
 
   const quantity = state.quantity || 2
 
-  const [name, setName] = useState('')
-  const [email, setEmail] = useState('')
-  const [status, setStatus] = useState('idle') // idle | processing | success
+  const [name, setName] = useState(user?.name || '')
+  const [email, setEmail] = useState(user?.email || '')
+  const [status, setStatus] = useState('idle') // idle | submitting | pending
+  const [pendingOrder, setPendingOrder] = useState(null)
 
   const canSubmit = name.trim() && email.trim() && status === 'idle'
 
   function handleSubmit(e) {
     e.preventDefault()
-    if (!canSubmit) return
-    setStatus('processing')
-    setTimeout(() => setStatus('success'), 2000)
+    if (!canSubmit || !option) return
+    setStatus('submitting')
+
+    const subtotal = option.price * quantity
+    const fee = subtotal * SERVICE_FEE_RATE
+    const total = subtotal + fee
+
+    setTimeout(() => {
+      const order = createOrder({
+        eventId: event.id,
+        eventTitle: event.title,
+        eventDate: event.date,
+        eventVenue: event.venue || '',
+        eventCity: event.city,
+        eventCategory: event.category,
+        eventImage: event.image,
+        user: name.trim(),
+        email: email.trim(),
+        section: option.section,
+        row: option.row,
+        tier: option.tier,
+        tierLabel: option.tierLabel,
+        quantity,
+        pricePerTicket: option.price,
+        subtotal,
+        fee,
+        total,
+      })
+      setPendingOrder(order)
+      setStatus('pending')
+      window.scrollTo({ top: 0, behavior: 'smooth' })
+    }, 700)
   }
 
-  if (status === 'success') {
-    return <SuccessScreen event={event} email={email} />
+  if (status === 'pending' && pendingOrder) {
+    return <PendingScreen order={pendingOrder} event={event} />
   }
 
   return (
@@ -90,7 +124,7 @@ export default function Checkout() {
                 />
               </div>
               <p className="mt-3 text-xs text-gray-500">
-                Mobile tickets and order confirmation will be sent to this
+                Mobile tickets and payment confirmation will be sent to this
                 email.
               </p>
             </section>
@@ -107,23 +141,15 @@ export default function Checkout() {
                 className="w-full md:w-auto md:self-start md:px-10"
                 disabled={!canSubmit}
               >
-                {status === 'processing'
-                  ? 'Verifying payment...'
-                  : 'Complete Payment'}
+                {status === 'submitting'
+                  ? 'Submitting order...'
+                  : 'I’ve Sent Payment'}
               </Button>
 
-              {status === 'processing' && (
-                <div className="flex items-center gap-2 rounded-lg border border-blue-100 bg-blue-50 px-4 py-3 text-sm text-brand">
-                  <span className="inline-block h-3 w-3 animate-pulse rounded-full bg-brand" />
-                  Waiting for blockchain confirmation. This may take a few
-                  seconds...
-                </div>
-              )}
-
               <p className="text-xs text-gray-400">
-                By completing payment you agree to our Terms of Service and
-                Refund Policy. This is a mock transaction — no real payment is
-                processed.
+                By submitting, you agree to our Terms of Service. Your tickets
+                will be confirmed after we verify your payment on-chain. This
+                is a mock transaction — no real payment is processed.
               </p>
             </div>
           </div>
@@ -148,54 +174,71 @@ function Step({ number, title, className = '' }) {
   )
 }
 
-function SuccessScreen({ event, email }) {
+function PendingScreen({ order, event }) {
   return (
     <div className="bg-gray-50">
-      <div className="mx-auto max-w-2xl px-4 py-16 md:py-24">
-        <div className="rounded-lg border border-gray-200 bg-white p-8 text-center shadow-sm md:p-12">
-          <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-green-100 text-green-600">
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth={3}
-              className="h-7 w-7"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                d="M5 13l4 4L19 7"
-              />
-            </svg>
+      <div className="mx-auto max-w-2xl px-4 py-12 md:py-20">
+        <div className="rounded-lg border border-gray-200 bg-white p-8 shadow-sm md:p-10">
+          <div className="flex items-center gap-4">
+            <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-amber-100 text-amber-600">
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth={2.5}
+                className="h-6 w-6"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  d="M12 8v4l3 2m6-2a9 9 0 11-18 0 9 9 0 0118 0z"
+                />
+              </svg>
+            </div>
+            <div>
+              <p className="text-xs font-semibold uppercase tracking-wider text-amber-600">
+                Payment Pending
+              </p>
+              <h1 className="text-2xl font-bold text-gray-900 md:text-3xl">
+                We received your order
+              </h1>
+            </div>
           </div>
 
-          <h1 className="mt-5 text-2xl font-bold text-gray-900 md:text-3xl">
-            Payment received
-          </h1>
-          <p className="mt-2 text-gray-600">
-            Your tickets have been confirmed.
+          <p className="mt-5 text-sm text-gray-600 md:text-base">
+            Your tickets will be confirmed after payment verification. Once
+            we’ve confirmed your crypto payment on-chain, an email with your
+            mobile tickets will be sent to{' '}
+            <span className="font-semibold text-gray-900">{order.email}</span>.
           </p>
 
-          <div className="mt-6 rounded-lg border border-gray-100 bg-gray-50 p-4 text-left">
+          <div className="mt-6 rounded-lg border border-gray-100 bg-gray-50 p-4">
             <p className="text-xs font-semibold uppercase tracking-wide text-gray-500">
-              Event
+              Order Details
             </p>
             <p className="mt-1 text-sm font-semibold text-gray-900">
-              {event.title}
+              {order.eventTitle}
             </p>
             <p className="text-xs text-gray-500">
-              {event.date} · {event.venue || event.city}
+              {order.eventDate} ·{' '}
+              {order.eventVenue || order.eventCity}
             </p>
-            {email && (
-              <p className="mt-3 text-xs text-gray-500">
-                A receipt was sent to{' '}
-                <span className="font-medium text-gray-700">{email}</span>.
-              </p>
-            )}
+            <dl className="mt-4 grid grid-cols-2 gap-3 text-sm md:grid-cols-4">
+              <Field label="Section" value={order.section} />
+              <Field label="Row" value={order.row || '—'} />
+              <Field label="Quantity" value={`× ${order.quantity}`} />
+              <Field label="Total" value={formatPrice(order.total)} />
+            </dl>
+            <p className="mt-4 border-t border-gray-100 pt-3 text-xs text-gray-500">
+              Order ID:{' '}
+              <span className="font-mono font-medium text-gray-700">
+                {order.id}
+              </span>
+            </p>
           </div>
 
-          <div className="mt-6 flex flex-col gap-2 sm:flex-row sm:justify-center">
+          <div className="mt-6 flex flex-col gap-2 sm:flex-row sm:justify-end">
             <Link to="/">
               <Button variant="secondary" className="w-full sm:w-auto">
                 Back to home
@@ -207,6 +250,17 @@ function SuccessScreen({ event, email }) {
           </div>
         </div>
       </div>
+    </div>
+  )
+}
+
+function Field({ label, value }) {
+  return (
+    <div>
+      <dt className="text-xs font-semibold uppercase tracking-wide text-gray-500">
+        {label}
+      </dt>
+      <dd className="mt-0.5 text-sm font-medium text-gray-900">{value}</dd>
     </div>
   )
 }

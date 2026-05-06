@@ -9,9 +9,13 @@ const TIER_PILL = {
   vip: 'bg-blue-600 text-white',
   premium: 'bg-blue-100 text-blue-700',
   standard: 'bg-gray-100 text-gray-700',
-  'front-row': 'bg-blue-600 text-white',
-  floor: 'bg-blue-100 text-blue-700',
-  ga: 'bg-gray-100 text-gray-700',
+}
+
+const LAYOUT_CAPTION = {
+  sports: 'Bowl seating layout',
+  concerts: 'Stage view layout',
+  arts: 'Theater seating layout',
+  family: 'Theater seating layout',
 }
 
 export default function SeatSelector({
@@ -34,19 +38,17 @@ export default function SeatSelector({
         </p>
       </header>
 
-      <div className="grid grid-cols-1 gap-5 md:grid-cols-[1fr_1.05fr] md:gap-6">
-        <div className="flex flex-col">
+      <div className="grid grid-cols-1 gap-5 md:grid-cols-[1fr_1.05fr] md:items-start md:gap-6">
+        <div className="flex flex-col md:sticky md:top-32">
           <p className="mb-2 text-xs font-semibold uppercase tracking-wider text-gray-500">
             Seating Map
           </p>
-          <div className="flex flex-1 items-center justify-center rounded-lg border border-gray-200 bg-gray-50 p-3 md:p-4">
+          <div className="flex aspect-[5/4] items-center justify-center rounded-lg border border-gray-200 bg-gray-50 p-3 md:p-4">
             <SeatingMap category={event.category} selectedKey={mapTier} />
           </div>
           <p className="mt-2 text-center text-xs text-gray-400">
             {event.venue || 'Venue'} ·{' '}
-            {event.category === 'concerts'
-              ? 'Stage view layout'
-              : 'Bowl seating layout'}
+            {LAYOUT_CAPTION[event.category] || 'Stage view layout'}
           </p>
         </div>
 

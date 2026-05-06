@@ -2,9 +2,15 @@ import { createContext, useContext, useEffect, useMemo, useState } from 'react'
 import { EVENTS } from '../data/events.js'
 import { categoryImg, CATEGORY_TAGS } from './image.js'
 import { toSlug } from './slug.js'
+import { getSeatOptions, SERVICE_FEE_RATE } from './price.js'
 
 const EVENTS_KEY = 'tm_admin_events'
-const ORDERS_KEY = 'tm_admin_orders'
+const ORDERS_KEY = 'tm_admin_orders_v2'
+
+const ORDER_STATUS = {
+  PENDING: 'Pending Payment',
+  PAID: 'Paid',
+}
 
 const AdminStoreContext = createContext(null)
 
@@ -23,28 +29,55 @@ function writeEvents(events) {
   localStorage.setItem(EVENTS_KEY, JSON.stringify(events))
 }
 
+const SEED_USERS = [
+  { name: 'Jordan Lee', email: 'jordan@example.com' },
+  { name: 'Maya Patel', email: 'maya@example.com' },
+  { name: 'Carlos Rivera', email: 'carlos@example.com' },
+  { name: 'Aisha Khan', email: 'aisha@example.com' },
+  { name: 'Ethan Brooks', email: 'ethan@example.com' },
+]
+
 function buildSeedOrders(events) {
-  const seedUsers = [
-    { name: 'Jordan Lee', email: 'jordan@example.com' },
-    { name: 'Maya Patel', email: 'maya@example.com' },
-    { name: 'Carlos Rivera', email: 'carlos@example.com' },
-    { name: 'Aisha Khan', email: 'aisha@example.com' },
-    { name: 'Ethan Brooks', email: 'ethan@example.com' },
-  ]
-  return events.slice(0, 8).map((event, i) => {
-    const user = seedUsers[i % seedUsers.length]
+  return events.slice(0, 6).map((event, i) => {
+    const user = SEED_USERS[i % SEED_USERS.length]
     const qty = (i % 3) + 1
-    const base = Number(String(event.price).replace(/[^0-9.]/g, '')) || 50
-    const total = base * qty * 1.12
+    const options = getSeatOptions(event)
+    const option = options[i % options.length] || {
+      section: 'Section A',
+      row: 12,
+      tier: 'standard',
+      tierLabel: 'Standard',
+      price: 80,
+    }
+    const subtotal = option.price * qty
+    const fee = subtotal * SERVICE_FEE_RATE
+    const total = subtotal + fee
+    const isPaid = i % 3 !== 0
+
     return {
-      id: `o-${i + 1}`,
+      id: `ord-seed-${i + 1}`,
+      createdAt: new Date(Date.now() - (i + 1) * 36e5).toISOString(),
       eventId: event.id,
       eventTitle: event.title,
+      eventDate: event.date,
+      eventVenue: event.venue || '',
+      eventCity: event.city,
+      eventCategory: event.category,
       user: user.name,
       email: user.email,
+      section: option.section,
+      row: option.row,
+      tier: option.tier,
+      tierLabel: option.tierLabel,
       quantity: qty,
-      total: `$${total.toFixed(2)}`,
-      status: i % 4 === 0 ? 'Pending' : 'Confirmed',
+      pricePerTicket: option.price,
+      subtotal,
+      fee,
+      total,
+      status: isPaid ? ORDER_STATUS.PAID : ORDER_STATUS.PENDING,
+      confirmedAt: isPaid
+        ? new Date(Date.now() - (i + 1) * 18e5).toISOString()
+        : null,
     }
   })
 }
@@ -78,17 +111,17 @@ export function AdminStoreProvider({ children }) {
     writeEvents(events)
   }, [events])
 
+  useEffect(() => {
+    localStorage.setItem(ORDERS_KEY, JSON.stringify(orders))
+  }, [orders])
+
   const value = useMemo(
     () => ({
       events,
       orders,
       createEvent(data) {
         const id = data.id || `ev-${Date.now()}`
-        const next = {
-          ...data,
-          id,
-          citySlug: toSlug(data.city || ''),
-        }
+        const next = { ...data, id, citySlug: toSlug(data.city || '') }
         setEvents((prev) => [next, ...prev])
       },
       updateEvent(id, data) {
@@ -107,6 +140,33 @@ export function AdminStoreProvider({ children }) {
         localStorage.removeItem(EVENTS_KEY)
         setEvents(EVENTS)
       },
+      createOrder(order) {
+        const id = order.id || `ord-${Date.now()}`
+        const next = {
+          createdAt: new Date().toISOString(),
+          status: ORDER_STATUS.PENDING,
+          ...order,
+          id,
+        }
+        setOrders((prev) => [next, ...prev])
+        return next
+      },
+      confirmOrder(id) {
+        setOrders((prev) =>
+          prev.map((o) =>
+            o.id === id
+              ? {
+                  ...o,
+                  status: ORDER_STATUS.PAID,
+                  confirmedAt: new Date().toISOString(),
+                }
+              : o,
+          ),
+        )
+      },
+      getOrder(id) {
+        return orders.find((o) => o.id === id) || null
+      },
     }),
     [events, orders],
   )
@@ -123,3 +183,5 @@ export function useAdminStore() {
   if (!ctx) throw new Error('useAdminStore must be used within AdminStoreProvider')
   return ctx
 }
+
+export { ORDER_STATUS }

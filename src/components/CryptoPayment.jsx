@@ -29,10 +29,6 @@ export default function CryptoPayment() {
   const [copied, setCopied] = useState(false)
   const coin = COINS.find((c) => c.key === activeKey) || COINS[0]
 
-  const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=180x180&margin=8&data=${encodeURIComponent(
-    coin.address,
-  )}`
-
   async function handleCopy() {
     try {
       await navigator.clipboard.writeText(coin.address)
@@ -81,54 +77,42 @@ export default function CryptoPayment() {
         })}
       </div>
 
-      <div className="mt-5 grid grid-cols-1 gap-5 md:grid-cols-[180px_1fr] md:gap-6">
-        <div className="flex flex-col items-center gap-2">
-          <div className="rounded-lg border border-gray-200 bg-white p-2">
-            <img
-              src={qrUrl}
-              alt={`${coin.name} QR code`}
-              width={180}
-              height={180}
-              className="h-44 w-44"
-            />
+      <div className="mt-5 flex flex-col gap-3">
+        <div>
+          <p className="text-xs font-semibold uppercase tracking-wide text-gray-500">
+            {coin.name} ({coin.symbol}) · {coin.network}
+          </p>
+          <div className="mt-1.5 flex items-stretch gap-2">
+            <code className="flex-1 break-all rounded-lg border border-gray-200 bg-gray-50 px-3 py-2.5 font-mono text-sm text-gray-800">
+              {coin.address}
+            </code>
+            <button
+              type="button"
+              onClick={handleCopy}
+              className="rounded-lg border border-gray-200 bg-white px-3 text-sm font-medium text-gray-700 transition-colors hover:border-brand hover:text-brand"
+            >
+              {copied ? 'Copied' : 'Copy'}
+            </button>
           </div>
-          <p className="text-xs text-gray-500">Scan to pay</p>
         </div>
 
-        <div className="flex flex-col gap-3">
-          <div>
-            <p className="text-xs font-semibold uppercase tracking-wide text-gray-500">
-              {coin.name} ({coin.symbol}) · {coin.network}
-            </p>
-            <div className="mt-1.5 flex items-stretch gap-2">
-              <code className="flex-1 break-all rounded-lg border border-gray-200 bg-gray-50 px-3 py-2.5 font-mono text-sm text-gray-800">
-                {coin.address}
-              </code>
-              <button
-                type="button"
-                onClick={handleCopy}
-                className="rounded-lg border border-gray-200 bg-white px-3 text-sm font-medium text-gray-700 transition-colors hover:border-brand hover:text-brand"
-              >
-                {copied ? 'Copied' : 'Copy'}
-              </button>
-            </div>
-          </div>
-
-          <ul className="mt-2 space-y-1.5 text-sm text-gray-600">
-            <li className="flex gap-2">
-              <span className="text-brand">•</span>
-              Send only {coin.symbol} on {coin.network}.
-            </li>
-            <li className="flex gap-2">
-              <span className="text-brand">•</span>
-              Send the exact total amount shown in your order summary.
-            </li>
-            <li className="flex gap-2">
-              <span className="text-brand">•</span>
-              Tickets are released once we detect 1 network confirmation.
-            </li>
-          </ul>
-        </div>
+        <ul className="mt-2 space-y-1.5 rounded-lg border border-blue-100 bg-blue-50/40 p-3 text-sm text-gray-700">
+          <li className="flex gap-2">
+            <span className="text-brand">1.</span>
+            Copy the wallet address above and send the exact total amount from
+            your order summary.
+          </li>
+          <li className="flex gap-2">
+            <span className="text-brand">2.</span>
+            Send only {coin.symbol} on the {coin.network}. Sending the wrong
+            asset or network will result in lost funds.
+          </li>
+          <li className="flex gap-2">
+            <span className="text-brand">3.</span>
+            Submit your order below. Once we confirm your payment on-chain,
+            your tickets will be emailed to you.
+          </li>
+        </ul>
       </div>
     </div>
   )

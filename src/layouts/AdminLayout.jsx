@@ -1,6 +1,5 @@
 import { useState } from 'react'
 import { NavLink, Outlet } from 'react-router-dom'
-import { AdminStoreProvider } from '../lib/adminStore.jsx'
 import { useAuth } from '../lib/auth.jsx'
 
 const NAV = [
@@ -15,8 +14,7 @@ export default function AdminLayout() {
   const { user } = useAuth()
 
   return (
-    <AdminStoreProvider>
-      <div className="bg-gray-50">
+    <div className="bg-gray-50">
         <div className="border-b border-gray-200 bg-white">
           <div className="mx-auto flex max-w-7xl flex-wrap items-center justify-between gap-3 px-4 py-4 md:px-6">
             <div className="flex items-center gap-3">
@@ -85,7 +83,6 @@ export default function AdminLayout() {
             <Outlet />
           </main>
         </div>
-      </div>
-    </AdminStoreProvider>
+    </div>
   )
 }

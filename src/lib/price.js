@@ -31,23 +31,82 @@ function hash(str) {
   return Math.abs(h | 0)
 }
 
-function pickInRange(seed, min, max) {
-  const range = max - min
-  return min + (hash(seed) % (range + 1))
+function makeRng(seed) {
+  let s = hash(seed) || 1
+  return () => {
+    s = (Math.imul(s, 1664525) + 1013904223) | 0
+    return (s >>> 0) / 0x100000000
+  }
+}
+
+function pickInRange(rand, min, max) {
+  return min + Math.floor(rand() * (max - min + 1))
+}
+
+function pickUniqueRows(rand, count, low, high) {
+  const available = high - low + 1
+  const target = Math.min(count, available)
+  const set = new Set()
+  while (set.size < target) {
+    set.add(pickInRange(rand, low, high))
+  }
+  return [...set].sort((a, b) => a - b)
+}
+
+function lerp(t, from, to) {
+  return from + t * (to - from)
+}
+
+const SPORTS_TIERS = [
+  { tier: 'vip', tierLabel: 'VIP', section: 'VIP Section',
+    countRange: [2, 4], rowRange: [1, 6], priceRange: [2.4, 1.8] },
+  { tier: 'premium', tierLabel: 'Premium', section: 'Section B',
+    countRange: [3, 5], rowRange: [5, 20], priceRange: [1.6, 1.2] },
+  { tier: 'standard', tierLabel: 'Standard', section: 'Section A',
+    countRange: [4, 6], rowRange: [15, 40], priceRange: [1.0, 0.7] },
+]
+
+const CONCERT_TIERS = [
+  { tier: 'vip', tierLabel: 'VIP', section: 'Front Row',
+    countRange: [2, 4], rowRange: [1, 5], priceRange: [2.4, 1.8] },
+  { tier: 'premium', tierLabel: 'Premium', section: 'Floor',
+    countRange: [3, 5], rowRange: [5, 15], priceRange: [1.6, 1.2] },
+  { tier: 'standard', tierLabel: 'Standard', section: 'Mezzanine',
+    countRange: [4, 6], rowRange: [10, 25], priceRange: [1.0, 0.7] },
+]
+
+const THEATER_TIERS = [
+  { tier: 'vip', tierLabel: 'VIP', section: 'Orchestra',
+    countRange: [2, 4], rowRange: [1, 3], priceRange: [2.4, 1.8] },
+  { tier: 'premium', tierLabel: 'Premium', section: 'Mezzanine',
+    countRange: [3, 5], rowRange: [3, 10], priceRange: [1.6, 1.2] },
+  { tier: 'standard', tierLabel: 'Standard', section: 'Balcony',
+    countRange: [4, 6], rowRange: [8, 18], priceRange: [1.0, 0.7] },
+]
+
+function tierConfigs(category) {
+  switch (category) {
+    case 'sports':
+      return SPORTS_TIERS
+    case 'concerts':
+      return CONCERT_TIERS
+    case 'arts':
+    case 'family':
+    default:
+      return THEATER_TIERS
+  }
 }
 
 const TIER_RANGES = {
   vip: { range: [5, 25], label: 'High Demand', lowLabel: 'Limited Availability' },
-  'front-row': { range: [5, 25], label: 'High Demand', lowLabel: 'Limited Availability' },
   premium: { range: [20, 50], label: 'Selling Fast' },
-  floor: { range: [20, 50], label: 'Selling Fast' },
   standard: { range: [40, 80], label: 'Available' },
-  ga: { range: [40, 80], label: 'Available' },
 }
 
 function buildAvailability(eventId, optionKey, tier) {
   const config = TIER_RANGES[tier] || TIER_RANGES.standard
-  const percent = pickInRange(`${eventId}-${optionKey}`, config.range[0], config.range[1])
+  const rand = makeRng(`${eventId}-${optionKey}-availability`)
+  const percent = pickInRange(rand, config.range[0], config.range[1])
   const lowStock = percent < 20
   return {
     availabilityPercent: percent,
@@ -57,35 +116,37 @@ function buildAvailability(eventId, optionKey, tier) {
   }
 }
 
-function decorateOption(eventId, option) {
-  return { ...option, ...buildAvailability(eventId, option.key, option.tier) }
-}
-
 export function getSeatOptions(event) {
+  if (!event) return []
   const base = parsePrice(event.price)
-  const id = event.id
+  const rand = makeRng(`${event.id}-rows`)
+  const configs = tierConfigs(event.category)
+  const options = []
 
-  if (event.category === 'concerts') {
-    const raw = [
-      { key: 'fr-r1', section: 'Front Row', row: 1, tier: 'front-row', tierLabel: 'Front Row', price: r(base, 2.4) },
-      { key: 'fr-r2', section: 'Front Row', row: 2, tier: 'front-row', tierLabel: 'Front Row', price: r(base, 2.2) },
-      { key: 'fl-r5', section: 'Floor', row: 5, tier: 'floor', tierLabel: 'Floor', price: r(base, 1.6) },
-      { key: 'fl-r8', section: 'Floor', row: 8, tier: 'floor', tierLabel: 'Floor', price: r(base, 1.4) },
-      { key: 'ga-a', section: 'General Admission', row: null, tier: 'ga', tierLabel: 'General Admission', price: r(base, 1.0) },
-      { key: 'ga-b', section: 'General Admission (Upper)', row: null, tier: 'ga', tierLabel: 'General Admission', price: r(base, 0.9) },
-    ]
-    return raw.map((o) => decorateOption(id, o))
+  for (const cfg of configs) {
+    const count = pickInRange(rand, cfg.countRange[0], cfg.countRange[1])
+    const rows = pickUniqueRows(rand, count, cfg.rowRange[0], cfg.rowRange[1])
+    const [low, high] = cfg.rowRange
+    const span = high - low || 1
+
+    rows.forEach((row) => {
+      const t = (row - low) / span
+      const mult = lerp(t, cfg.priceRange[0], cfg.priceRange[1])
+      options.push({
+        key: `${cfg.tier}-r${row}`,
+        section: cfg.section,
+        row,
+        tier: cfg.tier,
+        tierLabel: cfg.tierLabel,
+        price: r(base, mult),
+      })
+    })
   }
 
-  const raw = [
-    { key: 'vip-r2', section: 'VIP Section', row: 2, tier: 'vip', tierLabel: 'VIP', price: r(base, 2.2) },
-    { key: 'vip-r4', section: 'VIP Section', row: 4, tier: 'vip', tierLabel: 'VIP', price: r(base, 2.0) },
-    { key: 'prem-r5', section: 'Section B', row: 5, tier: 'premium', tierLabel: 'Premium', price: r(base, 1.5) },
-    { key: 'prem-r8', section: 'Section B', row: 8, tier: 'premium', tierLabel: 'Premium', price: r(base, 1.4) },
-    { key: 'std-r10', section: 'Section A', row: 10, tier: 'standard', tierLabel: 'Standard', price: r(base, 1.0) },
-    { key: 'std-r15', section: 'Section A', row: 15, tier: 'standard', tierLabel: 'Standard', price: r(base, 0.85) },
-  ]
-  return raw.map((o) => decorateOption(id, o))
+  return options.map((o) => ({
+    ...o,
+    ...buildAvailability(event.id, o.key, o.tier),
+  }))
 }
 
 export function availabilityColors(percent) {
