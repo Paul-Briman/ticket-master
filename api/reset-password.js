@@ -1,5 +1,6 @@
 import bcrypt from 'bcryptjs'
 import { db } from '../lib/db.js'
+import { normalizeEmail } from '../lib/utils.js'
 import { handleError, methodNotAllowed } from '../lib/seed.js'
 
 export default async function handler(req, res) {
@@ -15,7 +16,11 @@ export default async function handler(req, res) {
     }
 
     const inputOtp = String(otp).trim()
-    const user = await db.findUserByEmail(email)
+    const normalizedEmail = normalizeEmail(email)
+    console.log('[reset-password] LOOKING FOR USER:', normalizedEmail)
+
+    const user = await db.findUserByEmail(normalizedEmail)
+    console.log('[reset-password] USER FOUND:', !!user)
     if (!user) return res.status(404).json({ error: 'Account not found' })
 
     console.log('[reset-password] stored:', user.resetCode, 'entered:', inputOtp)

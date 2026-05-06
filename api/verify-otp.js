@@ -2,6 +2,7 @@ import { db } from '../lib/db.js'
 import { signToken } from '../lib/auth.js'
 import { sendEmail } from '../lib/email.js'
 import { welcomeEmail } from '../lib/templates/welcome.js'
+import { normalizeEmail } from '../lib/utils.js'
 import { handleError, methodNotAllowed } from '../lib/seed.js'
 
 export default async function handler(req, res) {
@@ -9,13 +10,25 @@ export default async function handler(req, res) {
 
   try {
     const { email, otp } = req.body || {}
-    if (!email || !otp) {
-      return res.status(400).json({ error: 'Email and OTP are required' })
+    console.log('[verify-otp] EMAIL RAW:', email, '| otp present:', !!otp)
+
+    if (!email) {
+      return res.status(400).json({ error: 'Email required for verification' })
+    }
+    if (!otp) {
+      return res.status(400).json({ error: 'OTP code is required' })
     }
 
+    const normalizedEmail = normalizeEmail(email)
     const inputOtp = String(otp).trim()
-    const user = await db.findUserByEmail(email)
+    console.log('[verify-otp] LOOKING FOR USER:', normalizedEmail)
+
+    const user = await db.findUserByEmail(normalizedEmail)
+    console.log('[verify-otp] USER FOUND:', !!user, user ? `(verified=${user.isVerified})` : '')
+
     if (!user) {
+      const allEmails = await db.getAllUserEmails()
+      console.log('[verify-otp] ALL USER EMAILS:', allEmails)
       return res.status(404).json({ error: 'Account not found' })
     }
     if (user.isVerified) {
@@ -36,6 +49,7 @@ export default async function handler(req, res) {
     delete user.otpCode
     delete user.otpExpires
     await db.upsertUser(user)
+    console.log('[verify-otp] USER VERIFIED:', user.email)
 
     await sendEmail({
       to: user.email,

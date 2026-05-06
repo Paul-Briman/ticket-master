@@ -1,6 +1,7 @@
 import bcrypt from 'bcryptjs'
 import { db } from '../lib/db.js'
 import { signToken } from '../lib/auth.js'
+import { normalizeEmail } from '../lib/utils.js'
 import { ensureAdminSeeded, handleError, methodNotAllowed } from '../lib/seed.js'
 
 export default async function handler(req, res) {
@@ -10,11 +11,15 @@ export default async function handler(req, res) {
     await ensureAdminSeeded()
 
     const { email, password } = req.body || {}
+    console.log('[login] EMAIL RAW:', email)
+
     if (!email || !password) {
       return res.status(400).json({ error: 'Email and password are required' })
     }
 
-    const user = await db.findUserByEmail(email)
+    const normalizedEmail = normalizeEmail(email)
+    const user = await db.findUserByEmail(normalizedEmail)
+    console.log('[login] USER FOUND:', !!user, user ? `(verified=${user.isVerified}, role=${user.role})` : '')
     if (!user) return res.status(401).json({ error: 'Invalid credentials' })
     if (!user.isVerified) {
       return res.status(403).json({
