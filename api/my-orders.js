@@ -7,7 +7,7 @@ export default async function handler(req, res) {
 
   try {
     const auth = requireAuth(req)
-    const orders = db.findOrdersByEmail(auth.email)
+    const orders = await db.findOrdersByEmail(auth.email)
     return res.status(200).json({ orders })
   } catch (err) {
     return handleError(res, err, 'my-orders')

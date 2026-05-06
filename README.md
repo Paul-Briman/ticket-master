@@ -84,9 +84,21 @@ Admin (role=admin):
 - `GET  /api/admin-orders` — every order
 - `POST /api/confirm-payment` `{ orderId }` — flips to `Paid` and sends ticket email
 
-## Storage caveat
+## Storage
 
-`lib/db.js` writes JSON files. Locally this lives in `data/`; on Vercel it goes to `/tmp/tm-data` because that's the only writable path. **`/tmp` is per-instance and ephemeral** — for production-grade persistence, swap `lib/db.js` for Vercel KV / Postgres / Supabase. Hooks are already shaped like a key-value layer (`findUserByEmail`, `insertOrder`, etc.) so it's a localized refactor.
+`lib/db.js` auto-detects how to persist:
+
+- **Vercel KV** (recommended for production): if `KV_REST_API_URL` and `KV_REST_API_TOKEN` are set, all reads/writes go through Vercel KV (Upstash Redis). Shared across all serverless instances → no more "Invalid OTP" surprises across cold starts.
+- **File fallback**: otherwise, JSON files in `data/` (local) or `/tmp/tm-data` (Vercel). Fast, but `/tmp` is per-instance and ephemeral.
+
+### Enable Vercel KV (one-time setup)
+
+1. In your Vercel project: **Storage** → **Create Database** → **Marketplace Database Providers** → pick **Upstash for Redis** (or any Redis-compatible KV).
+2. Click **Connect to Project** for `ticket-master`.
+3. Vercel auto-injects `KV_REST_API_URL`, `KV_REST_API_TOKEN`, `KV_REST_API_READ_ONLY_TOKEN`, and `KV_URL` into your project's env.
+4. Redeploy (push any commit, or click **Redeploy**).
+
+`lib/db.js` will pick up the env vars automatically — no code changes needed.
 
 ## Email behavior
 

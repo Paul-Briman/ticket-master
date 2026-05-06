@@ -19,7 +19,7 @@ export default async function handler(req, res) {
     }
 
     const normalizedEmail = email.trim().toLowerCase()
-    const existing = db.findUserByEmail(normalizedEmail)
+    const existing = await db.findUserByEmail(normalizedEmail)
     if (existing && existing.isVerified) {
       return res.status(409).json({ error: 'An account with this email already exists' })
     }
@@ -37,7 +37,7 @@ export default async function handler(req, res) {
       otpExpires: Date.now() + OTP_TTL_MS,
       createdAt: existing?.createdAt || new Date().toISOString(),
     }
-    db.upsertUser(user)
+    await db.upsertUser(user)
 
     console.log(`[signup] OTP for ${user.email}: ${otp}`)
 

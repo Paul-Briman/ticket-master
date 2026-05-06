@@ -15,12 +15,12 @@ export default async function handler(req, res) {
       return res.status(400).json({ error: 'A valid email is required' })
     }
 
-    const user = db.findUserByEmail(email)
+    const user = await db.findUserByEmail(email)
     if (user) {
       const otp = generateOtp()
       user.resetCode = otp
       user.resetExpires = Date.now() + OTP_TTL_MS
-      db.upsertUser(user)
+      await db.upsertUser(user)
 
       console.log(`[forgot-password] reset code for ${user.email}: ${otp}`)
 

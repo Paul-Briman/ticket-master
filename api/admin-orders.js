@@ -8,7 +8,7 @@ export default async function handler(req, res) {
   try {
     const auth = requireAuth(req)
     requireAdmin(auth)
-    const orders = db.listOrders()
+    const orders = await db.listOrders()
     return res.status(200).json({ orders })
   } catch (err) {
     return handleError(res, err, 'admin-orders')

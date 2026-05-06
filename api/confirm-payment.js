@@ -14,13 +14,13 @@ export default async function handler(req, res) {
     const { orderId } = req.body || {}
     if (!orderId) return res.status(400).json({ error: 'orderId is required' })
 
-    const order = db.findOrder(orderId)
+    const order = await db.findOrder(orderId)
     if (!order) return res.status(404).json({ error: 'Order not found' })
     if (order.status === 'Paid') {
       return res.status(409).json({ error: 'Order is already confirmed' })
     }
 
-    const updated = db.updateOrder(orderId, {
+    const updated = await db.updateOrder(orderId, {
       status: 'Paid',
       confirmedAt: new Date().toISOString(),
     })

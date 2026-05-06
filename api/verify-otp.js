@@ -14,7 +14,7 @@ export default async function handler(req, res) {
     }
 
     const inputOtp = String(otp).trim()
-    const user = db.findUserByEmail(email)
+    const user = await db.findUserByEmail(email)
     if (!user) {
       return res.status(404).json({ error: 'Account not found' })
     }
@@ -35,7 +35,7 @@ export default async function handler(req, res) {
     user.verifiedAt = new Date().toISOString()
     delete user.otpCode
     delete user.otpExpires
-    db.upsertUser(user)
+    await db.upsertUser(user)
 
     await sendEmail({
       to: user.email,

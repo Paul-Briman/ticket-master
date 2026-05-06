@@ -15,7 +15,7 @@ export default async function handler(req, res) {
       return res.status(400).json({ error: 'A valid email is required' })
     }
 
-    const user = db.findUserByEmail(email)
+    const user = await db.findUserByEmail(email)
     if (!user) {
       return res.status(404).json({ error: 'No account found for this email. Please sign up first.' })
     }
@@ -26,7 +26,7 @@ export default async function handler(req, res) {
     const otp = generateOtp()
     user.otpCode = otp
     user.otpExpires = Date.now() + OTP_TTL_MS
-    db.upsertUser(user)
+    await db.upsertUser(user)
 
     console.log(`[resend-otp] new OTP for ${user.email}: ${otp}`)
 

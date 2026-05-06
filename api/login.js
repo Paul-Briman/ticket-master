@@ -14,7 +14,7 @@ export default async function handler(req, res) {
       return res.status(400).json({ error: 'Email and password are required' })
     }
 
-    const user = db.findUserByEmail(email)
+    const user = await db.findUserByEmail(email)
     if (!user) return res.status(401).json({ error: 'Invalid credentials' })
     if (!user.isVerified) {
       return res.status(403).json({

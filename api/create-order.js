@@ -41,7 +41,7 @@ export default async function handler(req, res) {
       total: Number(o.total) || 0,
     }
 
-    db.insertOrder(order)
+    await db.insertOrder(order)
     return res.status(201).json({ ok: true, order })
   } catch (err) {
     return handleError(res, err, 'create-order')

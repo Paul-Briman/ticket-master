@@ -15,7 +15,7 @@ export default async function handler(req, res) {
     }
 
     const inputOtp = String(otp).trim()
-    const user = db.findUserByEmail(email)
+    const user = await db.findUserByEmail(email)
     if (!user) return res.status(404).json({ error: 'Account not found' })
 
     console.log('[reset-password] stored:', user.resetCode, 'entered:', inputOtp)
@@ -31,7 +31,7 @@ export default async function handler(req, res) {
     user.passwordResetAt = new Date().toISOString()
     delete user.resetCode
     delete user.resetExpires
-    db.upsertUser(user)
+    await db.upsertUser(user)
 
     return res.status(200).json({ ok: true, message: 'Password updated. You can now log in.' })
   } catch (err) {
