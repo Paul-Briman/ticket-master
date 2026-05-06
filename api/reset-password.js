@@ -14,23 +14,24 @@ export default async function handler(req, res) {
       return res.status(400).json({ error: 'Password must be at least 6 characters' })
     }
 
-    const record = db.findOtp(email, 'reset')
-    if (!record) return res.status(400).json({ error: 'Invalid or expired code' })
-    if (Date.now() > record.expiresAt) {
-      db.deleteOtp(email, 'reset')
-      return res.status(400).json({ error: 'Code expired. Request a new one.' })
-    }
-
-    const ok = await bcrypt.compare(String(otp), record.hash)
-    if (!ok) return res.status(400).json({ error: 'Invalid code' })
-
+    const inputOtp = String(otp).trim()
     const user = db.findUserByEmail(email)
     if (!user) return res.status(404).json({ error: 'Account not found' })
 
+    console.log('[reset-password] stored:', user.resetCode, 'entered:', inputOtp)
+
+    if (!user.resetCode || user.resetCode !== inputOtp) {
+      return res.status(400).json({ error: 'Invalid code' })
+    }
+    if (!user.resetExpires || Date.now() > user.resetExpires) {
+      return res.status(400).json({ error: 'Code expired. Request a new one.' })
+    }
+
     user.passwordHash = await bcrypt.hash(newPassword, 10)
     user.passwordResetAt = new Date().toISOString()
+    delete user.resetCode
+    delete user.resetExpires
     db.upsertUser(user)
-    db.deleteOtp(email, 'reset')
 
     return res.status(200).json({ ok: true, message: 'Password updated. You can now log in.' })
   } catch (err) {

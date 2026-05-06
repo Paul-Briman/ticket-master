@@ -18,30 +18,28 @@ export default async function handler(req, res) {
       return res.status(400).json({ error: 'Password must be at least 6 characters' })
     }
 
-    const existing = db.findUserByEmail(email)
+    const normalizedEmail = email.trim().toLowerCase()
+    const existing = db.findUserByEmail(normalizedEmail)
     if (existing && existing.isVerified) {
       return res.status(409).json({ error: 'An account with this email already exists' })
     }
 
     const passwordHash = await bcrypt.hash(password, 10)
+    const otp = generateOtp()
+
     const user = {
       name: name.trim(),
-      email: email.trim().toLowerCase(),
+      email: normalizedEmail,
       passwordHash,
       role: 'user',
       isVerified: false,
+      otpCode: otp,
+      otpExpires: Date.now() + OTP_TTL_MS,
       createdAt: existing?.createdAt || new Date().toISOString(),
     }
     db.upsertUser(user)
 
-    const otp = generateOtp()
-    const otpHash = await bcrypt.hash(otp, 10)
-    db.upsertOtp({
-      email: user.email,
-      purpose: 'signup',
-      hash: otpHash,
-      expiresAt: Date.now() + OTP_TTL_MS,
-    })
+    console.log(`[signup] OTP for ${user.email}: ${otp}`)
 
     await sendEmail({
       to: user.email,

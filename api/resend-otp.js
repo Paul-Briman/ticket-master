@@ -1,4 +1,3 @@
-import bcrypt from 'bcryptjs'
 import { db } from '../lib/db.js'
 import { sendEmail } from '../lib/email.js'
 import { otpEmail } from '../lib/templates/otp.js'
@@ -18,20 +17,18 @@ export default async function handler(req, res) {
 
     const user = db.findUserByEmail(email)
     if (!user) {
-      return res.status(200).json({ ok: true, message: 'If an account exists, a code has been sent.' })
+      return res.status(404).json({ error: 'No account found for this email. Please sign up first.' })
     }
     if (user.isVerified) {
       return res.status(400).json({ error: 'Account is already verified' })
     }
 
     const otp = generateOtp()
-    const otpHash = await bcrypt.hash(otp, 10)
-    db.upsertOtp({
-      email: user.email,
-      purpose: 'signup',
-      hash: otpHash,
-      expiresAt: Date.now() + OTP_TTL_MS,
-    })
+    user.otpCode = otp
+    user.otpExpires = Date.now() + OTP_TTL_MS
+    db.upsertUser(user)
+
+    console.log(`[resend-otp] new OTP for ${user.email}: ${otp}`)
 
     await sendEmail({
       to: user.email,

@@ -1,4 +1,3 @@
-import bcrypt from 'bcryptjs'
 import { db } from '../lib/db.js'
 import { sendEmail } from '../lib/email.js'
 import { resetEmail } from '../lib/templates/reset.js'
@@ -19,13 +18,12 @@ export default async function handler(req, res) {
     const user = db.findUserByEmail(email)
     if (user) {
       const otp = generateOtp()
-      const otpHash = await bcrypt.hash(otp, 10)
-      db.upsertOtp({
-        email: user.email,
-        purpose: 'reset',
-        hash: otpHash,
-        expiresAt: Date.now() + OTP_TTL_MS,
-      })
+      user.resetCode = otp
+      user.resetExpires = Date.now() + OTP_TTL_MS
+      db.upsertUser(user)
+
+      console.log(`[forgot-password] reset code for ${user.email}: ${otp}`)
+
       await sendEmail({
         to: user.email,
         subject: 'Reset your Ticketmaster password',

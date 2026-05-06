@@ -1,4 +1,3 @@
-import bcrypt from 'bcryptjs'
 import { db } from '../lib/db.js'
 import { signToken } from '../lib/auth.js'
 import { sendEmail } from '../lib/email.js'
@@ -14,23 +13,29 @@ export default async function handler(req, res) {
       return res.status(400).json({ error: 'Email and OTP are required' })
     }
 
-    const record = db.findOtp(email, 'signup')
-    if (!record) return res.status(400).json({ error: 'Invalid or expired code' })
-    if (Date.now() > record.expiresAt) {
-      db.deleteOtp(email, 'signup')
-      return res.status(400).json({ error: 'Code expired. Request a new one.' })
+    const inputOtp = String(otp).trim()
+    const user = db.findUserByEmail(email)
+    if (!user) {
+      return res.status(404).json({ error: 'Account not found' })
+    }
+    if (user.isVerified) {
+      return res.status(400).json({ error: 'Account is already verified' })
     }
 
-    const ok = await bcrypt.compare(String(otp), record.hash)
-    if (!ok) return res.status(400).json({ error: 'Invalid code' })
+    console.log('[verify-otp] stored:', user.otpCode, 'entered:', inputOtp)
 
-    const user = db.findUserByEmail(email)
-    if (!user) return res.status(404).json({ error: 'Account not found' })
+    if (!user.otpCode || user.otpCode !== inputOtp) {
+      return res.status(400).json({ error: 'Invalid OTP' })
+    }
+    if (!user.otpExpires || Date.now() > user.otpExpires) {
+      return res.status(400).json({ error: 'OTP expired. Request a new one.' })
+    }
 
     user.isVerified = true
     user.verifiedAt = new Date().toISOString()
+    delete user.otpCode
+    delete user.otpExpires
     db.upsertUser(user)
-    db.deleteOtp(email, 'signup')
 
     await sendEmail({
       to: user.email,
