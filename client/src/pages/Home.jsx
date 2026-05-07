@@ -3,6 +3,7 @@ import Section from '../components/Section.jsx'
 import EventCard from '../components/EventCard.jsx'
 import CardScroller from '../components/CardScroller.jsx'
 import { CityFeatureCard } from '../components/CityCard.jsx'
+import LeagueCard from '../components/sports/LeagueCard.jsx'
 import {
   worldCupMatches,
   concerts,
@@ -10,6 +11,7 @@ import {
   EVENTS,
 } from '../data/events.js'
 import { POPULAR_US_CITIES } from '../data/cities.js'
+import { SPORTS_LEAGUES } from '../data/leagues.js'
 import { useRecentlyViewed } from '../lib/recentlyViewed.js'
 
 export default function Home() {
@@ -41,7 +43,7 @@ export default function Home() {
       <Section
         title="Popular World Cup Matches"
         subtitle="Don't miss out on the biggest stage in football."
-        seeAllHref="/sports"
+        seeAllHref="/sports/world-cup"
       >
         <CardScroller>
           {worldCupMatches.map((match) => (
@@ -51,10 +53,26 @@ export default function Home() {
       </Section>
 
       <Section
+        title="Browse Sports by League"
+        subtitle="Pick your league — from the World Cup and UCL to the NBA, NFL, F1, UFC, and more."
+        seeAllHref="/sports"
+        background="gray"
+      >
+        <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-5">
+          {SPORTS_LEAGUES.map((league, idx) => (
+            <LeagueCard
+              key={league.key}
+              league={league}
+              lock={500 + idx}
+            />
+          ))}
+        </div>
+      </Section>
+
+      <Section
         title="Trending Concerts"
         subtitle="The hottest tours and performances right now."
         seeAllHref="/concerts"
-        background="gray"
       >
         <CardScroller>
           {concerts.map((concert) => (
@@ -67,6 +85,7 @@ export default function Home() {
         title="Arts & Theater"
         subtitle="Discover plays, shows, and live performances."
         seeAllHref="/arts"
+        background="gray"
       >
         <CardScroller>
           {artsEvents.map((event) => (
@@ -79,7 +98,6 @@ export default function Home() {
         title="Family Events"
         subtitle="Fun experiences for all ages."
         seeAllHref="/family"
-        background="gray"
       >
         <CardScroller>
           {familyEvents.map((event) => (
@@ -92,6 +110,7 @@ export default function Home() {
         title="Popular Cities"
         subtitle="Find events in top cities across the United States."
         seeAllHref="/cities"
+        background="gray"
       >
         <CardScroller>
           {POPULAR_US_CITIES.map((city) => (

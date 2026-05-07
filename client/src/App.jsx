@@ -11,6 +11,7 @@ import ForgotPassword from './pages/ForgotPassword.jsx'
 import ResetPassword from './pages/ResetPassword.jsx'
 import Checkout from './pages/Checkout.jsx'
 import Sports from './pages/Sports.jsx'
+import SportsLeague from './pages/SportsLeague.jsx'
 import Concerts from './pages/Concerts.jsx'
 import Arts from './pages/Arts.jsx'
 import Family from './pages/Family.jsx'
@@ -30,6 +31,7 @@ export default function App() {
         <Route path="/" element={<Home />} />
 
         <Route path="/sports" element={<Sports />} />
+        <Route path="/sports/:league" element={<SportsLeague />} />
         <Route path="/concerts" element={<Concerts />} />
         <Route path="/arts" element={<Arts />} />
         <Route path="/family" element={<Family />} />

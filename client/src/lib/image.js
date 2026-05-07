@@ -10,6 +10,24 @@ export const CATEGORY_TAGS = {
   family: 'themepark,disney,carnival,family',
 }
 
+export const LEAGUE_TAGS = {
+  'world-cup': 'fifa,worldcup,stadium,soccer',
+  nba: 'basketball,arena,nba,court',
+  ucl: 'championsleague,stadium,football,europe',
+  nfl: 'football,nfl,stadium,helmet',
+  f1: 'formula1,racing,track,f1car',
+  ufc: 'ufc,octagon,mma,fighter',
+  tennis: 'tennis,grandslam,court,player',
+  boxing: 'boxing,ring,fighter,gloves',
+  mlb: 'baseball,mlb,stadium,diamond',
+  olympics: 'olympics,athlete,medal,stadium',
+}
+
+export function leagueImg(leagueKey, opts = {}) {
+  const tags = LEAGUE_TAGS[leagueKey] || 'sports,stadium'
+  return categoryImg(tags, opts)
+}
+
 export const CITY_TAGS = {
   'new-york': 'newyork,manhattan,timessquare',
   'los-angeles': 'losangeles,hollywood,california',
