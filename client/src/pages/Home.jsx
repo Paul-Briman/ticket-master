@@ -47,7 +47,7 @@ export default function Home() {
         subtitle="Live fixtures from TheSportsDB."
         seeAllHref="/sports/world-cup"
         league="world-cup"
-        size={8}
+        size={12}
         fallback={worldCupMatches}
       />
 
