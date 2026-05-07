@@ -1,4 +1,5 @@
 import { Link } from 'react-router-dom'
+import FavoriteButton from './FavoriteButton.jsx'
 
 const BADGE_STYLES = {
   hot: 'bg-red-50 text-red-600 border border-red-200',
@@ -24,12 +25,14 @@ export default function EventCard({
       className="group flex h-full flex-col overflow-hidden rounded-lg border border-gray-200 bg-white transition-all duration-200 hover:-translate-y-1 hover:border-gray-300 hover:shadow-md"
     >
       <div className="relative aspect-[4/3] w-full overflow-hidden bg-gray-100">
+        {id && <FavoriteButton eventId={id} eventTitle={title} />}
+
         {image ? (
           <img
             src={image}
             alt={title}
             loading="lazy"
-            className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
+            className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
           />
         ) : (
           <div className="flex h-full w-full items-center justify-center text-sm text-gray-400">

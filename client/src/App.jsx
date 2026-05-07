@@ -17,6 +17,7 @@ import Family from './pages/Family.jsx'
 import Cities from './pages/Cities.jsx'
 import CityPage from './pages/CityPage.jsx'
 import MyTickets from './pages/MyTickets.jsx'
+import Favorites from './pages/Favorites.jsx'
 import AdminOverview from './pages/admin/Overview.jsx'
 import AdminEvents from './pages/admin/AdminEvents.jsx'
 import AdminUsers from './pages/admin/AdminUsers.jsx'
@@ -57,6 +58,14 @@ export default function App() {
           element={
             <ProtectedRoute>
               <MyTickets />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/favorites"
+          element={
+            <ProtectedRoute>
+              <Favorites />
             </ProtectedRoute>
           }
         />

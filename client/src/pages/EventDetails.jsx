@@ -7,8 +7,13 @@ import Section from '../components/Section.jsx'
 import EventCard from '../components/EventCard.jsx'
 import CardScroller from '../components/CardScroller.jsx'
 import Button from '../components/Button.jsx'
+import EventCountdown from '../components/EventCountdown.jsx'
+import FavoriteButton from '../components/FavoriteButton.jsx'
+import TrustBadges from '../components/TrustBadges.jsx'
 import { EVENTS } from '../data/events.js'
 import { formatPrice, getSeatOptions, SERVICE_FEE_RATE } from '../lib/price.js'
+import { recordRecentView } from '../lib/recentlyViewed.js'
+import { parseEventDate } from '../lib/dateParse.js'
 
 export default function EventDetails() {
   const { id } = useParams()
@@ -16,7 +21,10 @@ export default function EventDetails() {
 
   useEffect(() => {
     window.scrollTo({ top: 0, behavior: 'auto' })
-  }, [id])
+    if (event?.id) recordRecentView(event.id)
+  }, [id, event?.id])
+
+  const targetDate = useMemo(() => parseEventDate(event?.date), [event?.date])
 
   const options = useMemo(() => (event ? getSeatOptions(event) : []), [event])
   const [selectedKey, setSelectedKey] = useState(null)
@@ -60,10 +68,35 @@ export default function EventDetails() {
         <div className="mx-auto max-w-7xl px-4 py-8 md:px-6 md:py-12">
           <div className="grid grid-cols-1 gap-8 lg:grid-cols-[1fr_380px]">
             <div className="flex flex-col gap-6">
+              {targetDate && (
+                <article className="rounded-lg border border-gray-200 bg-gradient-to-br from-blue-600 to-blue-800 p-5 text-white md:p-6">
+                  <div className="flex flex-wrap items-center justify-between gap-4">
+                    <div>
+                      <p className="text-xs font-semibold uppercase tracking-wider text-white/80">
+                        Event begins in
+                      </p>
+                      <h3 className="mt-1 text-base font-bold md:text-lg">
+                        {event.title}
+                      </h3>
+                    </div>
+                    <EventCountdown targetDate={targetDate} />
+                  </div>
+                </article>
+              )}
+
               <article className="rounded-lg border border-gray-200 bg-white p-5 md:p-6">
-                <h2 className="text-xl font-bold text-gray-900 md:text-2xl">
-                  About this event
-                </h2>
+                <div className="flex items-start justify-between gap-3">
+                  <div className="min-w-0">
+                    <h2 className="text-xl font-bold text-gray-900 md:text-2xl">
+                      About this event
+                    </h2>
+                  </div>
+                  <FavoriteButton
+                    eventId={event.id}
+                    eventTitle={event.title}
+                    variant="inline"
+                  />
+                </div>
                 <p className="mt-3 text-sm leading-relaxed text-gray-600 md:text-base">
                   Don’t miss <strong>{event.title}</strong> at{' '}
                   <strong>{event.venue || event.city}</strong>. Doors open one
@@ -78,6 +111,10 @@ export default function EventDetails() {
                   <Detail label="City" value={event.city} />
                   <Detail label="Starting from" value={event.price} />
                 </dl>
+
+                <div className="mt-5">
+                  <TrustBadges />
+                </div>
               </article>
 
               <SeatSelector

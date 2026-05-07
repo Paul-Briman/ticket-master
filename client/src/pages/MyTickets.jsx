@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom'
 import Button from '../components/Button.jsx'
 import Modal from '../components/Modal.jsx'
 import TicketEmail from '../components/TicketEmail.jsx'
+import { SkeletonRow } from '../components/Skeleton.jsx'
 import { useAuth } from '../lib/auth.jsx'
 import { ORDER_STATUS } from '../lib/adminStore.jsx'
 import { api } from '../lib/api.js'
@@ -61,7 +62,15 @@ export default function MyTickets() {
           </div>
         )}
 
-        {!loading && myTickets.length === 0 && !error ? (
+        {loading ? (
+          <ul className="mt-8 flex flex-col gap-3">
+            {Array.from({ length: 3 }).map((_, i) => (
+              <li key={i}>
+                <SkeletonRow height="h-24" />
+              </li>
+            ))}
+          </ul>
+        ) : myTickets.length === 0 && !error ? (
           <EmptyState />
         ) : (
           <ul className="mt-8 flex flex-col gap-4">

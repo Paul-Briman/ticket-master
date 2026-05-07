@@ -32,3 +32,49 @@ body {
     @apply text-sm text-gray-500;
   }
 }
+
+/* Shimmer for skeleton loaders */
+.tm-shimmer {
+  background-image: linear-gradient(
+    90deg,
+    rgba(229, 231, 235, 0) 0%,
+    rgba(255, 255, 255, 0.7) 50%,
+    rgba(229, 231, 235, 0) 100%
+  );
+  background-size: 200% 100%;
+  background-repeat: no-repeat;
+  animation: tmShimmer 1.4s ease-in-out infinite;
+}
+
+@keyframes tmShimmer {
+  0% {
+    background-position: -150% 0;
+  }
+  100% {
+    background-position: 250% 0;
+  }
+}
+
+@keyframes tmToastIn {
+  0% {
+    opacity: 0;
+    transform: translateY(-8px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes tmFadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.tm-fade-in {
+  animation: tmFadeIn 0.25s ease-out;
+}

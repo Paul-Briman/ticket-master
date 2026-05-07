@@ -5,17 +5,20 @@ import { GoogleOAuthProvider } from '@react-oauth/google'
 import App from './App.jsx'
 import { AuthProvider } from './lib/auth.jsx'
 import { AdminStoreProvider } from './lib/adminStore.jsx'
+import { ToastProvider } from './components/Toast.jsx'
 import './index.css'
 
 const googleClientId = import.meta.env.VITE_GOOGLE_CLIENT_ID
 
 const tree = (
   <BrowserRouter>
-    <AuthProvider>
-      <AdminStoreProvider>
-        <App />
-      </AdminStoreProvider>
-    </AuthProvider>
+    <ToastProvider>
+      <AuthProvider>
+        <AdminStoreProvider>
+          <App />
+        </AdminStoreProvider>
+      </AuthProvider>
+    </ToastProvider>
   </BrowserRouter>
 )
 

@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import Modal from '../../components/Modal.jsx'
 import Button from '../../components/Button.jsx'
 import TicketEmail from '../../components/TicketEmail.jsx'
+import { SkeletonRow } from '../../components/Skeleton.jsx'
 import { ORDER_STATUS } from '../../lib/adminStore.jsx'
 import { api } from '../../lib/api.js'
 import { formatPrice, optionLabel } from '../../lib/price.js'
@@ -65,6 +66,14 @@ export default function AdminOrders() {
             : `${orders.length} order${orders.length === 1 ? '' : 's'} · confirm payments and review the email sent to each customer.`}
         </p>
       </header>
+
+      {loading && (
+        <div className="flex flex-col gap-2">
+          {Array.from({ length: 4 }).map((_, i) => (
+            <SkeletonRow key={i} height="h-16" />
+          ))}
+        </div>
+      )}
 
       {error && (
         <div className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">

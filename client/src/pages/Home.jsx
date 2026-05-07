@@ -7,16 +7,36 @@ import {
   worldCupMatches,
   concerts,
   getEventsByCategory,
+  EVENTS,
 } from '../data/events.js'
 import { POPULAR_US_CITIES } from '../data/cities.js'
+import { useRecentlyViewed } from '../lib/recentlyViewed.js'
 
 export default function Home() {
   const artsEvents = getEventsByCategory('arts')
   const familyEvents = getEventsByCategory('family')
+  const { recentIds } = useRecentlyViewed()
+  const recentEvents = recentIds
+    .map((id) => EVENTS.find((e) => e.id === id))
+    .filter(Boolean)
 
   return (
     <div className="flex flex-col">
       <Hero />
+
+      {recentEvents.length > 0 && (
+        <Section
+          title="Recently Viewed"
+          subtitle="Pick up where you left off."
+          background="gray"
+        >
+          <CardScroller>
+            {recentEvents.map((event) => (
+              <EventCard key={event.id} {...event} />
+            ))}
+          </CardScroller>
+        </Section>
+      )}
 
       <Section
         title="Popular World Cup Matches"

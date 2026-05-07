@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { useAuth } from '../lib/auth.jsx'
+import { useFavorites } from '../lib/favorites.js'
 
 function initials(name = '') {
   return name
@@ -13,6 +14,7 @@ function initials(name = '') {
 
 export default function UserMenu({ transparent = false }) {
   const { user, logout } = useAuth()
+  const { favoriteCount } = useFavorites()
   const [open, setOpen] = useState(false)
   const ref = useRef(null)
   const navigate = useNavigate()
@@ -94,16 +96,35 @@ export default function UserMenu({ transparent = false }) {
           <Link
             to="/my-tickets"
             onClick={() => setOpen(false)}
-            className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 hover:text-brand"
+            className="flex items-center justify-between px-4 py-2 text-sm text-gray-700 transition-colors hover:bg-gray-50 hover:text-brand"
           >
-            My Tickets
+            <span className="flex items-center gap-2">
+              <span aria-hidden>🎟️</span>
+              My Tickets
+            </span>
+          </Link>
+          <Link
+            to="/favorites"
+            onClick={() => setOpen(false)}
+            className="flex items-center justify-between px-4 py-2 text-sm text-gray-700 transition-colors hover:bg-gray-50 hover:text-brand"
+          >
+            <span className="flex items-center gap-2">
+              <span aria-hidden>❤️</span>
+              Favorites
+            </span>
+            {favoriteCount > 0 && (
+              <span className="rounded-full bg-blue-50 px-2 py-0.5 text-[11px] font-semibold text-brand">
+                {favoriteCount}
+              </span>
+            )}
           </Link>
           <button
             type="button"
             onClick={handleLogout}
-            className="block w-full border-t border-gray-100 px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-50 hover:text-red-600"
+            className="flex w-full items-center gap-2 border-t border-gray-100 px-4 py-2 text-left text-sm text-gray-700 transition-colors hover:bg-gray-50 hover:text-red-600"
           >
-            Logout
+            <span aria-hidden>↩</span>
+            <span>Logout</span>
           </button>
         </div>
       )}
