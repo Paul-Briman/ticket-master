@@ -78,6 +78,17 @@ export function AuthProvider({ children }) {
     [wrap],
   )
 
+  const googleLogin = useCallback(
+    ({ accessToken }) =>
+      wrap(async () => {
+        const res = await api.googleLogin({ accessToken })
+        setToken(res.token)
+        setUser(res.user)
+        return { user: res.user }
+      }),
+    [wrap],
+  )
+
   const forgotPassword = useCallback(
     ({ email }) => wrap(() => api.forgotPassword({ email })),
     [wrap],
@@ -103,6 +114,7 @@ export function AuthProvider({ children }) {
         verifyOtp,
         resendOtp,
         login,
+        googleLogin,
         forgotPassword,
         resetPassword,
         logout,

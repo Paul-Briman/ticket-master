@@ -100,6 +100,25 @@ Admin (role=admin):
 
 `lib/db.js` will pick up the env vars automatically — no code changes needed.
 
+## Google Sign-In (optional)
+
+The login and signup pages render a "Continue with Google" button when `VITE_GOOGLE_CLIENT_ID` is set. Without it, both pages still work via email + password.
+
+### One-time Google setup
+
+1. Open the Google Cloud Console: https://console.cloud.google.com/apis/credentials
+2. Configure the **OAuth consent screen** (External, fill in basic app info, add your email).
+3. Create credentials → **OAuth client ID** → **Web application**.
+4. **Authorized JavaScript origins** — add:
+   - `http://localhost:5173`
+   - `http://localhost:3000`
+   - your production URL (e.g. `https://ticket-master-henna.vercel.app`)
+5. Copy the resulting Client ID.
+6. Add it as **`VITE_GOOGLE_CLIENT_ID`** to your Vercel project env vars (and `.env` locally).
+7. Redeploy.
+
+Google sign-in users are auto-created on first login, marked verified, and skip the OTP step. Existing email users who Google-in get auto-verified and have any pending OTP cleared.
+
 ## Email behavior
 
 All emails use the layout in `lib/templates/layout.js`:

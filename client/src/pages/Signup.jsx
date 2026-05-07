@@ -1,13 +1,17 @@
 import { useState } from 'react'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
 import Input from '../components/Input.jsx'
+import PasswordInput from '../components/PasswordInput.jsx'
 import Button from '../components/Button.jsx'
+import GoogleLoginButton from '../components/GoogleLoginButton.jsx'
+import AuthDivider from '../components/AuthDivider.jsx'
 import { useAuth } from '../lib/auth.jsx'
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+const GOOGLE_ENABLED = !!import.meta.env.VITE_GOOGLE_CLIENT_ID
 
 export default function Signup() {
-  const { signup } = useAuth()
+  const { signup, googleLogin } = useAuth()
   const navigate = useNavigate()
   const location = useLocation()
   const redirectTo = location.state?.from || '/'
@@ -20,6 +24,9 @@ export default function Signup() {
   const [errors, setErrors] = useState({})
   const [formError, setFormError] = useState('')
   const [submitting, setSubmitting] = useState(false)
+  const [googleSubmitting, setGoogleSubmitting] = useState(false)
+
+  const busy = submitting || googleSubmitting
 
   function validate() {
     const next = {}
@@ -54,16 +61,56 @@ export default function Signup() {
     })
   }
 
+  async function handleGoogle(accessToken) {
+    setFormError('')
+    setGoogleSubmitting(true)
+    const result = await googleLogin({ accessToken })
+    setGoogleSubmitting(false)
+    if (!result.ok) {
+      setFormError(result.error)
+      return
+    }
+    navigate(redirectTo, { replace: true, state: fromState })
+  }
+
   return (
     <div className="bg-gray-50">
-      <div className="mx-auto flex max-w-md flex-col px-4 py-12 md:py-20">
-        <div className="rounded-lg border border-gray-200 bg-white p-6 shadow-sm md:p-8">
-          <h1 className="text-2xl font-bold text-gray-900">Create your account</h1>
-          <p className="mt-1 text-sm text-gray-500">
-            Sign up to buy tickets, save events, and manage orders.
-          </p>
+      <div className="mx-auto flex max-w-md flex-col px-4 py-10 md:py-16">
+        <div className="rounded-2xl border border-gray-200 bg-white p-7 shadow-sm md:p-9">
+          <div className="text-center">
+            <Link
+              to="/"
+              className="inline-block rounded-md bg-brand px-3 py-1 text-lg font-bold italic text-white shadow-sm"
+            >
+              ticketmaster<sup className="text-[0.55em]">®</sup>
+            </Link>
+            <h1 className="mt-5 text-2xl font-bold text-gray-900">
+              Create your account
+            </h1>
+            <p className="mt-1 text-sm text-gray-500">
+              Sign up to buy tickets, save events, and manage orders.
+            </p>
+          </div>
 
-          <form onSubmit={handleSubmit} className="mt-6 flex flex-col gap-4" noValidate>
+          {GOOGLE_ENABLED && (
+            <>
+              <div className="mt-6">
+                <GoogleLoginButton
+                  onSuccess={handleGoogle}
+                  onError={setFormError}
+                  disabled={busy}
+                  label="Sign up with Google"
+                />
+              </div>
+              <AuthDivider>or sign up with email</AuthDivider>
+            </>
+          )}
+
+          <form
+            onSubmit={handleSubmit}
+            className={GOOGLE_ENABLED ? 'flex flex-col gap-4' : 'mt-6 flex flex-col gap-4'}
+            noValidate
+          >
             <Input
               label="Full Name"
               placeholder="Jane Doe"
@@ -71,6 +118,7 @@ export default function Signup() {
               onChange={(e) => setName(e.target.value)}
               error={errors.name}
               autoComplete="name"
+              disabled={busy}
             />
             <Input
               label="Email Address"
@@ -80,24 +128,25 @@ export default function Signup() {
               onChange={(e) => setEmail(e.target.value)}
               error={errors.email}
               autoComplete="email"
+              disabled={busy}
             />
-            <Input
+            <PasswordInput
               label="Password"
-              type="password"
               placeholder="At least 6 characters"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               error={errors.password}
               autoComplete="new-password"
+              disabled={busy}
             />
-            <Input
+            <PasswordInput
               label="Confirm Password"
-              type="password"
               placeholder="Re-enter your password"
               value={confirm}
               onChange={(e) => setConfirm(e.target.value)}
               error={errors.confirm}
               autoComplete="new-password"
+              disabled={busy}
             />
 
             {formError && (
@@ -106,13 +155,18 @@ export default function Signup() {
               </div>
             )}
 
-            <Button type="submit" size="lg" className="w-full" disabled={submitting}>
+            <Button
+              type="submit"
+              size="lg"
+              className="w-full"
+              disabled={busy}
+            >
               {submitting ? 'Sending verification code...' : 'Create Account'}
             </Button>
 
             <p className="text-center text-xs text-gray-400">
-              We’ll email a 6-digit code to verify your address. By signing up
-              you agree to our Terms of Service and Privacy Policy.
+              We'll email a 6-digit code to verify your address. By signing
+              up you agree to our Terms of Service and Privacy Policy.
             </p>
           </form>
 

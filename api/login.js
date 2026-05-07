@@ -20,6 +20,12 @@ export default async function handler(req, res) {
     const normalizedEmail = normalizeEmail(email)
     const user = await db.findUserByEmail(normalizedEmail)
     console.log('[login] USER FOUND:', !!user, user ? `(verified=${user.isVerified}, role=${user.role})` : '')
+
+    if (user && !user.passwordHash && user.provider === 'google') {
+      return res.status(403).json({
+        error: 'This account uses Google sign-in. Click "Continue with Google" instead.',
+      })
+    }
     if (!user) return res.status(401).json({ error: 'Invalid credentials' })
     if (!user.isVerified) {
       return res.status(403).json({

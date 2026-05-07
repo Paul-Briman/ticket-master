@@ -67,6 +67,7 @@ export const api = {
   verifyOtp: (body) => request('/api/verify-otp', { method: 'POST', body, auth: false }),
   resendOtp: (body) => request('/api/resend-otp', { method: 'POST', body, auth: false }),
   login: (body) => request('/api/login', { method: 'POST', body, auth: false }),
+  googleLogin: (body) => request('/api/google-login', { method: 'POST', body, auth: false }),
   forgotPassword: (body) => request('/api/forgot-password', { method: 'POST', body, auth: false }),
   resetPassword: (body) => request('/api/reset-password', { method: 'POST', body, auth: false }),
 

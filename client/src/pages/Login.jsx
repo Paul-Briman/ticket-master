@@ -1,11 +1,16 @@
 import { useState } from 'react'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
 import Input from '../components/Input.jsx'
+import PasswordInput from '../components/PasswordInput.jsx'
 import Button from '../components/Button.jsx'
+import GoogleLoginButton from '../components/GoogleLoginButton.jsx'
+import AuthDivider from '../components/AuthDivider.jsx'
 import { useAuth } from '../lib/auth.jsx'
 
+const GOOGLE_ENABLED = !!import.meta.env.VITE_GOOGLE_CLIENT_ID
+
 export default function Login() {
-  const { login } = useAuth()
+  const { login, googleLogin } = useAuth()
   const navigate = useNavigate()
   const location = useLocation()
   const redirectTo = location.state?.from || '/'
@@ -15,16 +20,17 @@ export default function Login() {
   const [password, setPassword] = useState('')
   const [error, setError] = useState('')
   const [submitting, setSubmitting] = useState(false)
+  const [googleSubmitting, setGoogleSubmitting] = useState(false)
+
+  const busy = submitting || googleSubmitting
 
   async function handleSubmit(e) {
     e.preventDefault()
     setError('')
-
     if (!email.trim() || !password) {
       setError('Please enter your email and password.')
       return
     }
-
     setSubmitting(true)
     const result = await login({ email, password })
     setSubmitting(false)
@@ -43,16 +49,55 @@ export default function Login() {
     navigate(redirectTo, { replace: true, state: fromState })
   }
 
+  async function handleGoogle(accessToken) {
+    setError('')
+    setGoogleSubmitting(true)
+    const result = await googleLogin({ accessToken })
+    setGoogleSubmitting(false)
+    if (!result.ok) {
+      setError(result.error)
+      return
+    }
+    navigate(redirectTo, { replace: true, state: fromState })
+  }
+
   return (
     <div className="bg-gray-50">
-      <div className="mx-auto flex max-w-md flex-col px-4 py-12 md:py-20">
-        <div className="rounded-lg border border-gray-200 bg-white p-6 shadow-sm md:p-8">
-          <h1 className="text-2xl font-bold text-gray-900">Welcome back</h1>
-          <p className="mt-1 text-sm text-gray-500">
-            Log in to manage your tickets and orders.
-          </p>
+      <div className="mx-auto flex max-w-md flex-col px-4 py-10 md:py-16">
+        <div className="rounded-2xl border border-gray-200 bg-white p-7 shadow-sm transition-shadow md:p-9">
+          <div className="text-center">
+            <Link
+              to="/"
+              className="inline-block rounded-md bg-brand px-3 py-1 text-lg font-bold italic text-white shadow-sm"
+            >
+              ticketmaster<sup className="text-[0.55em]">®</sup>
+            </Link>
+            <h1 className="mt-5 text-2xl font-bold text-gray-900">
+              Welcome back
+            </h1>
+            <p className="mt-1 text-sm text-gray-500">
+              Log in to manage your tickets and orders.
+            </p>
+          </div>
 
-          <form onSubmit={handleSubmit} className="mt-6 flex flex-col gap-4" noValidate>
+          {GOOGLE_ENABLED && (
+            <>
+              <div className="mt-6">
+                <GoogleLoginButton
+                  onSuccess={handleGoogle}
+                  onError={setError}
+                  disabled={busy}
+                />
+              </div>
+              <AuthDivider>or continue with email</AuthDivider>
+            </>
+          )}
+
+          <form
+            onSubmit={handleSubmit}
+            className={GOOGLE_ENABLED ? 'flex flex-col gap-4' : 'mt-6 flex flex-col gap-4'}
+            noValidate
+          >
             <Input
               label="Email Address"
               type="email"
@@ -60,16 +105,17 @@ export default function Login() {
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               autoComplete="email"
+              disabled={busy}
             />
 
             <div>
-              <Input
+              <PasswordInput
                 label="Password"
-                type="password"
                 placeholder="••••••••"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 autoComplete="current-password"
+                disabled={busy}
               />
               <div className="mt-1.5 text-right">
                 <Link
@@ -87,13 +133,18 @@ export default function Login() {
               </div>
             )}
 
-            <Button type="submit" size="lg" className="w-full" disabled={submitting}>
+            <Button
+              type="submit"
+              size="lg"
+              className="w-full"
+              disabled={busy}
+            >
               {submitting ? 'Logging in...' : 'Log In'}
             </Button>
           </form>
 
           <p className="mt-6 text-center text-sm text-gray-600">
-            Don’t have an account?{' '}
+            Don't have an account?{' '}
             <Link
               to="/signup"
               className="font-semibold text-brand hover:text-brand-dark"
