@@ -59,36 +59,19 @@ export function useSportsEvents(params, { fallback = [], enabled = true } = {}) 
 
         const liveEvents = Array.isArray(data?.events) ? data.events : []
         const baseSource = data?.source || 'unknown'
-        const fb = fallbackRef.current || []
 
-        // If the API returned nothing (unsupported league, error, off-season),
-        // use curated catalog 100%.
-        if (liveEvents.length === 0) {
-          setEvents(fb)
+        // STRICT either/or: live data exists → use only live, never mix.
+        // No live data → use curated fallback 100%, never mix.
+        if (liveEvents.length > 0) {
+          memoryCache.set(key, { events: liveEvents, source: baseSource })
+          setEvents(liveEvents)
+          setSource(baseSource)
+          setError(null)
+        } else {
+          setEvents(fallbackRef.current)
           setSource('fallback')
           if (data?.error) setError(data.error)
-          return
         }
-
-        // If we got SOME events but fewer than the threshold, blend in the
-        // curated catalog so the section never looks half-empty.
-        const TARGET = 8
-        let resolvedEvents = liveEvents
-        let resolvedSource = baseSource
-        if (liveEvents.length < TARGET && fb.length > 0) {
-          const seen = new Set(liveEvents.map((e) => e.id))
-          const augment = fb.filter((e) => !seen.has(e.id))
-          resolvedEvents = [...liveEvents, ...augment].slice(
-            0,
-            Math.max(TARGET, liveEvents.length),
-          )
-          resolvedSource = 'mixed'
-        }
-
-        memoryCache.set(key, { events: resolvedEvents, source: resolvedSource })
-        setEvents(resolvedEvents)
-        setSource(resolvedSource)
-        setError(null)
       })
       .finally(() => {
         if (!cancelled) setLoading(false)
@@ -105,8 +88,8 @@ export function useSportsEvents(params, { fallback = [], enabled = true } = {}) 
     loading,
     error,
     source,
-    isLive: source === 'live' || source === 'cache' || source === 'mixed',
-    isMixed: source === 'mixed',
+    isLive: source === 'live' || source === 'cache',
+    isFallback: source === 'fallback',
   }
 }
 
