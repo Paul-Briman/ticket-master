@@ -77,4 +77,16 @@ export const api = {
   adminOrders: () => request('/api/admin-orders'),
   confirmPayment: (orderId) =>
     request('/api/confirm-payment', { method: 'POST', body: { orderId } }),
+
+  sportsEvents: (params = {}) => {
+    const search = new URLSearchParams()
+    Object.entries(params).forEach(([k, v]) => {
+      if (v !== undefined && v !== null && v !== '') search.set(k, String(v))
+    })
+    const qs = search.toString()
+    return request(`/api/sports${qs ? `?${qs}` : ''}`, { auth: false })
+  },
+
+  sportsEvent: (id) =>
+    request(`/api/sports/${encodeURIComponent(id)}`, { auth: false }),
 }

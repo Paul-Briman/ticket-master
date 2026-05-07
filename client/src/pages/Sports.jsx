@@ -6,17 +6,29 @@ import SportsTabs from '../components/sports/SportsTabs.jsx'
 import LeagueCard from '../components/sports/LeagueCard.jsx'
 import EventGrid from '../components/EventGrid.jsx'
 import Section from '../components/Section.jsx'
+import { SkeletonCard } from '../components/Skeleton.jsx'
+import { useSportsEvents } from '../lib/useSportsEvents.js'
+
+const localFallback = getEventsByCategory('sports')
 
 export default function Sports() {
   const config = CATEGORIES.sports
-  const allEvents = getEventsByCategory('sports')
-  const featured = [...allEvents]
+  const { events, loading, isLive } = useSportsEvents(
+    { size: 24 },
+    { fallback: localFallback },
+  )
+
+  const featured = [...events]
     .sort((a, b) => {
       const aBadge = a.badge ? 0 : 1
       const bBadge = b.badge ? 0 : 1
       return aBadge - bBadge
     })
     .slice(0, 8)
+    .map((e) => ({
+      ...e,
+      location: e.venue ? `${e.venue}, ${e.city}` : e.city,
+    }))
 
   return (
     <div className="flex flex-col">
@@ -46,15 +58,28 @@ export default function Sports() {
 
       <Section
         title="Featured Events"
-        subtitle={`${allEvents.length} sports events available — handpicked for you.`}
+        subtitle={
+          loading
+            ? 'Loading live fixtures from TheSportsDB...'
+            : `${events.length} sports events available — handpicked for you.`
+        }
         background="gray"
       >
-        <EventGrid
-          events={featured.map((e) => ({
-            ...e,
-            location: e.venue ? `${e.venue}, ${e.city}` : e.city,
-          }))}
-        />
+        {loading && featured.length === 0 ? (
+          <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+            {Array.from({ length: 8 }).map((_, i) => (
+              <SkeletonCard key={i} />
+            ))}
+          </div>
+        ) : (
+          <EventGrid events={featured} />
+        )}
+
+        {isLive && (
+          <p className="mt-3 text-xs text-gray-400">
+            Live data from TheSportsDB · synced hourly
+          </p>
+        )}
       </Section>
     </div>
   )

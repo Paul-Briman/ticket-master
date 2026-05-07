@@ -14,10 +14,17 @@ import { EVENTS } from '../data/events.js'
 import { formatPrice, getSeatOptions, SERVICE_FEE_RATE } from '../lib/price.js'
 import { recordRecentView } from '../lib/recentlyViewed.js'
 import { parseEventDate } from '../lib/dateParse.js'
+import { useSportsEvent } from '../lib/useSportsEvents.js'
 
 export default function EventDetails() {
   const { id } = useParams()
-  const event = EVENTS.find((e) => e.id === id)
+  const localEvent = EVENTS.find((e) => e.id === id)
+  const isLiveId = !localEvent && typeof id === 'string' && id.startsWith('sdb-')
+  const { event: liveEvent, loading: liveLoading, error: liveError } = useSportsEvent(
+    isLiveId ? id : null,
+    { enabled: isLiveId },
+  )
+  const event = localEvent || liveEvent
 
   useEffect(() => {
     window.scrollTo({ top: 0, behavior: 'auto' })
@@ -35,12 +42,23 @@ export default function EventDetails() {
     setQuantity(1)
   }, [id])
 
+  if (liveLoading) {
+    return (
+      <div className="container-page py-20 text-center">
+        <div className="mx-auto h-10 w-10 animate-spin rounded-full border-2 border-gray-200 border-t-brand" />
+        <p className="mt-4 text-sm text-gray-500">Loading event...</p>
+      </div>
+    )
+  }
+
   if (!event) {
     return (
       <div className="container-page py-20 text-center">
         <h1 className="text-2xl font-bold text-gray-900">Event not found</h1>
         <p className="mt-2 text-gray-500">
-          The event you’re looking for doesn’t exist or has been removed.
+          {liveError
+            ? 'We couldn’t load this event. It may have ended or been removed.'
+            : 'The event you’re looking for doesn’t exist or has been removed.'}
         </p>
         <Link
           to="/"

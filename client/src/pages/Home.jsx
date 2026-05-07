@@ -2,6 +2,7 @@ import Hero from '../components/Hero.jsx'
 import Section from '../components/Section.jsx'
 import EventCard from '../components/EventCard.jsx'
 import CardScroller from '../components/CardScroller.jsx'
+import LiveSportsSection from '../components/LiveSportsSection.jsx'
 import { CityFeatureCard } from '../components/CityCard.jsx'
 import LeagueCard from '../components/sports/LeagueCard.jsx'
 import {
@@ -14,9 +15,10 @@ import { POPULAR_US_CITIES } from '../data/cities.js'
 import { SPORTS_LEAGUES } from '../data/leagues.js'
 import { useRecentlyViewed } from '../lib/recentlyViewed.js'
 
+const artsEvents = getEventsByCategory('arts')
+const familyEvents = getEventsByCategory('family')
+
 export default function Home() {
-  const artsEvents = getEventsByCategory('arts')
-  const familyEvents = getEventsByCategory('family')
   const { recentIds } = useRecentlyViewed()
   const recentEvents = recentIds
     .map((id) => EVENTS.find((e) => e.id === id))
@@ -40,17 +42,14 @@ export default function Home() {
         </Section>
       )}
 
-      <Section
+      <LiveSportsSection
         title="Popular World Cup Matches"
-        subtitle="Don't miss out on the biggest stage in football."
+        subtitle="Live fixtures from TheSportsDB."
         seeAllHref="/sports/world-cup"
-      >
-        <CardScroller>
-          {worldCupMatches.map((match) => (
-            <EventCard key={match.id} {...match} />
-          ))}
-        </CardScroller>
-      </Section>
+        league="world-cup"
+        size={8}
+        fallback={worldCupMatches}
+      />
 
       <Section
         title="Browse Sports by League"
@@ -71,7 +70,7 @@ export default function Home() {
 
       <Section
         title="Trending Concerts"
-        subtitle="The hottest tours and performances right now."
+        subtitle="Curated tours and stadium nights from our entertainment desk."
         seeAllHref="/concerts"
       >
         <CardScroller>
@@ -83,7 +82,7 @@ export default function Home() {
 
       <Section
         title="Arts & Theater"
-        subtitle="Discover plays, shows, and live performances."
+        subtitle="Broadway productions, comedy nights, opera, and live performances."
         seeAllHref="/arts"
         background="gray"
       >
@@ -96,7 +95,7 @@ export default function Home() {
 
       <Section
         title="Family Events"
-        subtitle="Fun experiences for all ages."
+        subtitle="Disney-style experiences, ice shows, circus, and holiday attractions."
         seeAllHref="/family"
       >
         <CardScroller>

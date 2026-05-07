@@ -8,17 +8,26 @@ import EventGrid from '../components/EventGrid.jsx'
 import EventCard from '../components/EventCard.jsx'
 import CardScroller from '../components/CardScroller.jsx'
 import Section from '../components/Section.jsx'
+import { SkeletonCard } from '../components/Skeleton.jsx'
+import { useSportsEvents } from '../lib/useSportsEvents.js'
 
 export default function SportsLeague() {
   const { league: leagueKey } = useParams()
   const league = findLeague(leagueKey)
+  const localFallback = league ? getEventsByLeague(league.key) : []
+
+  const { events, loading, isLive } = useSportsEvents(
+    { league: league?.key, size: 30 },
+    { fallback: localFallback, enabled: !!league },
+  )
+
   if (!league) return <Navigate to="/sports" replace />
 
-  const events = getEventsByLeague(league.key).map((e) => ({
+  const decorated = events.map((e) => ({
     ...e,
     location: e.venue ? `${e.venue}, ${e.city}` : e.city,
   }))
-  const featured = events.filter((e) => e.badge).slice(0, 6)
+  const featured = decorated.filter((e) => e.badge).slice(0, 6)
 
   return (
     <div className="flex flex-col">
@@ -48,16 +57,30 @@ export default function SportsLeague() {
                 All {league.short} Events
               </h2>
               <p className="mt-1 text-sm text-gray-500">
-                {events.length} event{events.length === 1 ? '' : 's'} available
-                · United States
+                {loading
+                  ? 'Loading live fixtures from TheSportsDB...'
+                  : `${decorated.length} event${decorated.length === 1 ? '' : 's'} available`}
               </p>
             </div>
+            {isLive && (
+              <span className="rounded-full border border-emerald-200 bg-emerald-50 px-2.5 py-0.5 text-[11px] font-semibold uppercase tracking-wide text-emerald-700">
+                Live · TheSportsDB
+              </span>
+            )}
           </div>
 
-          <EventGrid
-            events={events}
-            emptyMessage={`No ${league.short} events listed yet — check back soon.`}
-          />
+          {loading && decorated.length === 0 ? (
+            <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+              {Array.from({ length: 8 }).map((_, i) => (
+                <SkeletonCard key={i} />
+              ))}
+            </div>
+          ) : (
+            <EventGrid
+              events={decorated}
+              emptyMessage={`No ${league.short} events scheduled right now — check back soon.`}
+            />
+          )}
         </div>
       </section>
     </div>

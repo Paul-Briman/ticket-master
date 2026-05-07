@@ -119,6 +119,27 @@ The login and signup pages render a "Continue with Google" button when `VITE_GOO
 
 Google sign-in users are auto-created on first login, marked verified, and skip the OTP step. Existing email users who Google-in get auto-verified and have any pending OTP cleared.
 
+## Live sports data (TheSportsDB)
+
+Sports sections fetch live fixtures from [TheSportsDB](https://www.thesportsdb.com/). **Only metadata is live** (event name, teams, league, venue, city, date, thumbnail). Pricing, seat tiers, availability percentages, ticketing, checkout, and email confirmations remain 100% internal.
+
+Concerts, arts & theater, and family events are intentionally **curated** — no external API is used for those — so the entertainment ecosystem feels editorial.
+
+### Setup
+
+The free public key `3` works out of the box for the endpoints we use. No env var required for basic functionality.
+
+If you have a Patreon-tier TheSportsDB key for richer data, add `SPORTDB_API_KEY` to your Vercel env vars and redeploy.
+
+### How it works
+
+- `lib/sportdb.js` — TheSportsDB client + transformer mapping API responses into our internal event shape, with synthesized internal prices.
+- `api/sports?league=nba&size=20` — list of upcoming events for a league. League keys: `world-cup`, `ucl`, `nba`, `nfl`, `f1`, `ufc`, `tennis`, `mlb`. Falls back gracefully on error.
+- `api/sports/[id]` — single event lookup for `sdb-`-prefixed IDs.
+- `client/src/lib/useSportsEvents.js` — `useSportsEvents()` and `useSportsEvent()` React hooks with in-memory request dedup.
+- Skeleton loaders render while live data is in flight; on fetch failure or empty result, the local mock catalog is used.
+- Vercel KV caches results for 1 hour to stay well under TheSportsDB rate limits.
+
 ## Email behavior
 
 All emails use the layout in `lib/templates/layout.js`:
