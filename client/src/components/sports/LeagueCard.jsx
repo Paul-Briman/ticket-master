@@ -7,6 +7,10 @@ export default function LeagueCard({ league, lock = 1 }) {
   const eventCount = counts[league.key]
   const image = leagueImg(league.key, { w: 600, h: 450, lock })
 
+  // The backend caps each league at 30 events, so when we receive 30
+  // we know there could be more upstream → show "30+".
+  const CAP = 30
+
   let countLabel
   if (loading && eventCount === undefined) {
     countLabel = 'Loading...'
@@ -14,6 +18,8 @@ export default function LeagueCard({ league, lock = 1 }) {
     countLabel = 'View league'
   } else if (eventCount === 0) {
     countLabel = 'No upcoming events'
+  } else if (eventCount >= CAP) {
+    countLabel = `${CAP}+ upcoming events`
   } else {
     countLabel = `${eventCount} upcoming event${eventCount === 1 ? '' : 's'}`
   }

@@ -7,6 +7,60 @@ const BADGE_STYLES = {
   new: 'bg-blue-50 text-blue-600 border border-blue-200',
 }
 
+function VersusVisual({ homeTeam, awayTeam, homeCrest, awayCrest }) {
+  return (
+    <div className="absolute inset-0 flex items-center justify-center bg-gradient-to-br from-blue-50 via-white to-blue-100 p-4">
+      <div className="flex w-full items-center justify-between gap-3">
+        <div className="flex flex-1 flex-col items-center gap-2 text-center">
+          <div className="flex h-16 w-16 items-center justify-center rounded-full bg-white p-1 shadow-sm md:h-20 md:w-20">
+            {homeCrest ? (
+              <img
+                src={homeCrest}
+                alt={homeTeam || 'Home team'}
+                loading="lazy"
+                className="h-full w-full object-contain"
+              />
+            ) : (
+              <span className="text-xs font-semibold text-gray-400">HOME</span>
+            )}
+          </div>
+          {homeTeam && (
+            <span className="line-clamp-2 max-w-[100px] text-[11px] font-semibold uppercase tracking-wide text-gray-700">
+              {homeTeam}
+            </span>
+          )}
+        </div>
+
+        <div className="flex shrink-0 flex-col items-center">
+          <span className="rounded-full bg-brand px-2.5 py-1 text-[10px] font-bold uppercase tracking-widest text-white shadow-sm">
+            vs
+          </span>
+        </div>
+
+        <div className="flex flex-1 flex-col items-center gap-2 text-center">
+          <div className="flex h-16 w-16 items-center justify-center rounded-full bg-white p-1 shadow-sm md:h-20 md:w-20">
+            {awayCrest ? (
+              <img
+                src={awayCrest}
+                alt={awayTeam || 'Away team'}
+                loading="lazy"
+                className="h-full w-full object-contain"
+              />
+            ) : (
+              <span className="text-xs font-semibold text-gray-400">AWAY</span>
+            )}
+          </div>
+          {awayTeam && (
+            <span className="line-clamp-2 max-w-[100px] text-[11px] font-semibold uppercase tracking-wide text-gray-700">
+              {awayTeam}
+            </span>
+          )}
+        </div>
+      </div>
+    </div>
+  )
+}
+
 export default function EventCard({
   id,
   title,
@@ -16,8 +70,13 @@ export default function EventCard({
   image,
   badge,
   badgeType = 'hot',
+  homeTeam,
+  awayTeam,
+  homeCrest,
+  awayCrest,
 }) {
   const href = id ? `/event/${id}` : '#'
+  const hasVersus = !!(homeCrest && awayCrest && homeTeam && awayTeam)
 
   return (
     <Link
@@ -27,7 +86,14 @@ export default function EventCard({
       <div className="relative aspect-[4/3] w-full overflow-hidden bg-gray-100">
         {id && <FavoriteButton eventId={id} eventTitle={title} />}
 
-        {image ? (
+        {hasVersus ? (
+          <VersusVisual
+            homeTeam={homeTeam}
+            awayTeam={awayTeam}
+            homeCrest={homeCrest}
+            awayCrest={awayCrest}
+          />
+        ) : image ? (
           <img
             src={image}
             alt={title}

@@ -15,7 +15,7 @@ export default function SportsLeague() {
   const league = findLeague(leagueKey)
 
   const { events, loading } = useSportsEvents(
-    { league: league?.key, size: 30 },
+    { league: league?.key, size: 120 },
     { enabled: !!league },
   )
 
