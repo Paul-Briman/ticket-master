@@ -1,34 +1,47 @@
 import { useEffect, useState } from 'react'
 import { api } from './api.js'
 
-// In-memory caches so re-mounting doesn't re-hit the network. Backend
-// already does its own SWR cache via Vercel KV.
 const memoryCache = new Map()
 const inflight = new Map()
 
-function paramsKey(params) {
+const FETCHERS = {
+  concerts: (p) => api.concerts(p),
+  arts: (p) => api.arts(p),
+  family: (p) => api.family(p),
+}
+
+function paramsKey(category, params) {
   const entries = Object.entries(params || {})
     .filter(([, v]) => v !== undefined && v !== null && v !== '')
     .sort(([a], [b]) => a.localeCompare(b))
-  return entries.map(([k, v]) => `${k}=${v}`).join('&') || '__default__'
+  const tail = entries.map(([k, v]) => `${k}=${v}`).join('&') || '__default__'
+  return `${category}|${tail}`
 }
 
 /**
- * Strict live-only hook. Returns whatever the backend says — no
- * curated mock fallback, no merging. If the live provider is empty
- * or down, the consumer should render an empty state.
+ * Fetches a normalized event list from the backend. Strict either/or
+ * semantics: whatever the API returns, the UI renders. The frontend
+ * never knows whether the data is live or curated — that's hidden in
+ * the backend adapter layer.
  */
-export function useSportsEvents(params, { enabled = true } = {}) {
+export function useEventList(category, params = {}, { enabled = true } = {}) {
   const [events, setEvents] = useState([])
   const [loading, setLoading] = useState(enabled)
   const [error, setError] = useState(null)
   const [status, setStatus] = useState('loading')
 
-  const key = paramsKey(params)
+  const key = paramsKey(category, params)
 
   useEffect(() => {
     if (!enabled) {
       setLoading(false)
+      return
+    }
+
+    const fetcher = FETCHERS[category]
+    if (!fetcher) {
+      setLoading(false)
+      setStatus('unsupported')
       return
     }
 
@@ -47,7 +60,7 @@ export function useSportsEvents(params, { enabled = true } = {}) {
 
     let promise = inflight.get(key)
     if (!promise) {
-      promise = api.sportsEvents(params).catch((err) => ({
+      promise = fetcher(params).catch((err) => ({
         events: [],
         status: 'error',
         error: err.message,
@@ -77,41 +90,4 @@ export function useSportsEvents(params, { enabled = true } = {}) {
   }, [key, enabled])
 
   return { events, loading, error, status }
-}
-
-export function useSportsEvent(id, { enabled = true } = {}) {
-  const [event, setEvent] = useState(null)
-  const [loading, setLoading] = useState(enabled && !!id)
-  const [error, setError] = useState(null)
-
-  useEffect(() => {
-    if (!enabled || !id) {
-      setLoading(false)
-      return
-    }
-    let cancelled = false
-    setLoading(true)
-    setError(null)
-
-    api
-      .sportsEvent(id)
-      .then((data) => {
-        if (cancelled) return
-        setEvent(data?.event || null)
-      })
-      .catch((err) => {
-        if (cancelled) return
-        setError(err.message)
-        setEvent(null)
-      })
-      .finally(() => {
-        if (!cancelled) setLoading(false)
-      })
-
-    return () => {
-      cancelled = true
-    }
-  }, [id, enabled])
-
-  return { event, loading, error }
 }

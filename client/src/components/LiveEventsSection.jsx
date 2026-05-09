@@ -2,26 +2,31 @@ import Section from './Section.jsx'
 import EventCard from './EventCard.jsx'
 import CardScroller from './CardScroller.jsx'
 import { SkeletonCard } from './Skeleton.jsx'
-import { useSportsEvents } from '../lib/useSportsEvents.js'
+import { useEventList } from '../lib/useEventList.js'
 
-function EmptyState({ message }) {
+function EmptyState({ label }) {
   return (
     <div className="rounded-lg border border-dashed border-gray-300 bg-white px-6 py-12 text-center">
-      <p className="text-sm font-medium text-gray-700">{message}</p>
-      <p className="mt-1 text-xs text-gray-500">Check back soon for new fixtures.</p>
+      <p className="text-sm font-medium text-gray-700">
+        No upcoming {label} available right now.
+      </p>
+      <p className="mt-1 text-xs text-gray-500">
+        Check back soon — the calendar is always being updated.
+      </p>
     </div>
   )
 }
 
-export default function LiveSportsSection({
+export default function LiveEventsSection({
+  category,
   title,
   subtitle,
   seeAllHref,
   background,
-  league,
-  size = 12,
+  size = 16,
+  emptyLabel,
 }) {
-  const { events, loading } = useSportsEvents({ league, size })
+  const { events, loading } = useEventList(category, { size })
 
   const cards = events.map((e) => ({
     ...e,
@@ -42,7 +47,7 @@ export default function LiveSportsSection({
           ))}
         </div>
       ) : cards.length === 0 ? (
-        <EmptyState message={`No upcoming ${title.toLowerCase()} fixtures available.`} />
+        <EmptyState label={emptyLabel || (title || category).toLowerCase()} />
       ) : (
         <CardScroller>
           {cards.map((event) => (

@@ -2,13 +2,15 @@ import express from 'express'
 import authRouter from '../lib/routes/auth.js'
 import ordersRouter from '../lib/routes/orders.js'
 import sportsRouter from '../lib/routes/sports.js'
+import concertsRouter from '../lib/routes/concerts.js'
+import artsRouter from '../lib/routes/arts.js'
+import familyRouter from '../lib/routes/family.js'
 
 const app = express()
 
 app.disable('x-powered-by')
 app.use(express.json({ limit: '256kb' }))
 
-// Health & introspection — handy for debugging the deployment.
 app.get('/api', (req, res) => {
   res.json({
     name: 'ticket-master-api',
@@ -27,6 +29,11 @@ app.get('/api', (req, res) => {
       'POST /api/confirm-payment',
       'GET  /api/sports',
       'GET  /api/sports/:id',
+      'GET  /api/concerts',
+      'GET  /api/arts',
+      'GET  /api/family',
+      'GET  /api/health',
+      'GET  /api/providers',
     ],
   })
 })
@@ -40,17 +47,53 @@ app.get('/api/health', (req, res) => {
       process.env.KV_REST_API_URL && process.env.KV_REST_API_TOKEN
     ),
     resendConfigured: !!process.env.RESEND_API_KEY,
-    sportdbConfigured: !!process.env.SPORTDB_API_KEY || true, // free key works
   })
 })
 
-// Mount feature routers under /api so the existing flat URL scheme
-// (e.g. /api/signup, /api/create-order) keeps working unchanged.
+// Provider configuration introspection — useful for debugging which live
+// data sources are wired up.
+app.get('/api/providers', (req, res) => {
+  res.json({
+    'football-data': {
+      configured: !!process.env.FOOTBALL_DATA_API_KEY,
+      coverage: ['world-cup', 'ucl'],
+    },
+    sportdb: {
+      configured: true, // free key '3' always works
+      keyOverridden: !!process.env.SPORTDB_API_KEY,
+      coverage: ['nba', 'nfl', 'f1', 'ufc', 'tennis', 'mlb', 'boxing'],
+    },
+    'curated-concerts': {
+      configured: true,
+      coverage: ['concerts'],
+      mode: 'curated',
+    },
+    'curated-arts': {
+      configured: true,
+      coverage: ['arts'],
+      mode: 'curated',
+    },
+    'curated-family': {
+      configured: true,
+      coverage: ['family'],
+      mode: 'curated',
+    },
+    bandsintown: {
+      configured: false,
+      appId: process.env.BANDSINTOWN_APP_ID || 'ticketmaster-clone',
+      coverage: ['concerts'],
+      mode: 'standby — partner approval pending',
+    },
+  })
+})
+
 app.use('/api', authRouter)
 app.use('/api', ordersRouter)
 app.use('/api/sports', sportsRouter)
+app.use('/api/concerts', concertsRouter)
+app.use('/api/arts', artsRouter)
+app.use('/api/family', familyRouter)
 
-// 404 — anything starting with /api that no router matched.
 app.use((req, res) => {
   res.status(404).json({ error: 'Not found', path: req.url })
 })

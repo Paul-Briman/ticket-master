@@ -1,6 +1,5 @@
 import { Navigate, useParams } from 'react-router-dom'
 import { findLeague } from '../data/leagues.js'
-import { getEventsByLeague } from '../data/events.js'
 import SportsTabs from '../components/sports/SportsTabs.jsx'
 import LeagueHero from '../components/sports/LeagueHero.jsx'
 import FilterBar from '../components/FilterBar.jsx'
@@ -14,11 +13,10 @@ import { useSportsEvents } from '../lib/useSportsEvents.js'
 export default function SportsLeague() {
   const { league: leagueKey } = useParams()
   const league = findLeague(leagueKey)
-  const localFallback = league ? getEventsByLeague(league.key) : []
 
-  const { events, loading, isLive } = useSportsEvents(
+  const { events, loading } = useSportsEvents(
     { league: league?.key, size: 30 },
-    { fallback: localFallback, enabled: !!league },
+    { enabled: !!league },
   )
 
   if (!league) return <Navigate to="/sports" replace />
@@ -27,7 +25,7 @@ export default function SportsLeague() {
     ...e,
     location: e.venue ? `${e.venue}, ${e.city}` : e.city,
   }))
-  const featured = decorated.filter((e) => e.badge).slice(0, 6)
+  const featured = decorated.slice(0, 6)
 
   return (
     <div className="flex flex-col">
@@ -51,22 +49,15 @@ export default function SportsLeague() {
 
       <section className="bg-gray-50">
         <div className="mx-auto max-w-7xl px-4 py-10 md:px-6 md:py-12">
-          <div className="mb-6 flex flex-wrap items-end justify-between gap-3">
-            <div>
-              <h2 className="text-2xl font-bold text-gray-900 md:text-3xl">
-                All {league.short} Events
-              </h2>
-              <p className="mt-1 text-sm text-gray-500">
-                {loading
-                  ? 'Loading live fixtures from TheSportsDB...'
-                  : `${decorated.length} event${decorated.length === 1 ? '' : 's'} available`}
-              </p>
-            </div>
-            {isLive && (
-              <span className="rounded-full border border-emerald-200 bg-emerald-50 px-2.5 py-0.5 text-[11px] font-semibold uppercase tracking-wide text-emerald-700">
-                Live · TheSportsDB
-              </span>
-            )}
+          <div className="mb-6">
+            <h2 className="text-2xl font-bold text-gray-900 md:text-3xl">
+              All {league.short} Events
+            </h2>
+            <p className="mt-1 text-sm text-gray-500">
+              {loading
+                ? 'Loading upcoming fixtures...'
+                : `${decorated.length} event${decorated.length === 1 ? '' : 's'} available`}
+            </p>
           </div>
 
           {loading && decorated.length === 0 ? (
@@ -78,7 +69,7 @@ export default function SportsLeague() {
           ) : (
             <EventGrid
               events={decorated}
-              emptyMessage={`No ${league.short} events scheduled right now — check back soon.`}
+              emptyMessage={`No upcoming ${league.short} events scheduled — check back soon.`}
             />
           )}
         </div>

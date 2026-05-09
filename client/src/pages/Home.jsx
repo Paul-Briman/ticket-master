@@ -3,20 +3,13 @@ import Section from '../components/Section.jsx'
 import EventCard from '../components/EventCard.jsx'
 import CardScroller from '../components/CardScroller.jsx'
 import LiveSportsSection from '../components/LiveSportsSection.jsx'
+import LiveEventsSection from '../components/LiveEventsSection.jsx'
 import { CityFeatureCard } from '../components/CityCard.jsx'
 import LeagueCard from '../components/sports/LeagueCard.jsx'
-import {
-  worldCupMatches,
-  concerts,
-  getEventsByCategory,
-  EVENTS,
-} from '../data/events.js'
+import { EVENTS } from '../data/events.js'
 import { POPULAR_US_CITIES } from '../data/cities.js'
 import { SPORTS_LEAGUES } from '../data/leagues.js'
 import { useRecentlyViewed } from '../lib/recentlyViewed.js'
-
-const artsEvents = getEventsByCategory('arts')
-const familyEvents = getEventsByCategory('family')
 
 export default function Home() {
   const { recentIds } = useRecentlyViewed()
@@ -44,11 +37,10 @@ export default function Home() {
 
       <LiveSportsSection
         title="Popular World Cup Matches"
-        subtitle="Live fixtures from TheSportsDB."
+        subtitle="Upcoming FIFA World Cup fixtures."
         seeAllHref="/sports/world-cup"
         league="world-cup"
         size={12}
-        fallback={worldCupMatches}
       />
 
       <Section
@@ -68,42 +60,30 @@ export default function Home() {
         </div>
       </Section>
 
-      <Section
+      <LiveEventsSection
+        category="concerts"
         title="Trending Concerts"
-        subtitle="Curated tours and stadium nights from our entertainment desk."
+        subtitle="Upcoming tour dates from artists fans are following most."
         seeAllHref="/concerts"
-      >
-        <CardScroller>
-          {concerts.map((concert) => (
-            <EventCard key={concert.id} {...concert} />
-          ))}
-        </CardScroller>
-      </Section>
+        size={16}
+      />
 
-      <Section
+      <LiveEventsSection
+        category="arts"
         title="Arts & Theater"
         subtitle="Broadway productions, comedy nights, opera, and live performances."
         seeAllHref="/arts"
         background="gray"
-      >
-        <CardScroller>
-          {artsEvents.map((event) => (
-            <EventCard key={event.id} {...event} />
-          ))}
-        </CardScroller>
-      </Section>
+        size={12}
+      />
 
-      <Section
+      <LiveEventsSection
+        category="family"
         title="Family Events"
         subtitle="Disney-style experiences, ice shows, circus, and holiday attractions."
         seeAllHref="/family"
-      >
-        <CardScroller>
-          {familyEvents.map((event) => (
-            <EventCard key={event.id} {...event} />
-          ))}
-        </CardScroller>
-      </Section>
+        size={12}
+      />
 
       <Section
         title="Popular Cities"

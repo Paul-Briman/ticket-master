@@ -89,4 +89,17 @@ export const api = {
 
   sportsEvent: (id) =>
     request(`/api/sports/${encodeURIComponent(id)}`, { auth: false }),
+
+  concerts: (params = {}) => fetchEndpointList('/api/concerts', params),
+  arts: (params = {}) => fetchEndpointList('/api/arts', params),
+  family: (params = {}) => fetchEndpointList('/api/family', params),
+}
+
+function fetchEndpointList(path, params = {}) {
+  const search = new URLSearchParams()
+  Object.entries(params).forEach(([k, v]) => {
+    if (v !== undefined && v !== null && v !== '') search.set(k, String(v))
+  })
+  const qs = search.toString()
+  return request(`${path}${qs ? `?${qs}` : ''}`, { auth: false })
 }

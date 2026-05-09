@@ -1,6 +1,5 @@
 import { CATEGORIES } from '../data/categories.js'
 import { SPORTS_LEAGUES } from '../data/leagues.js'
-import { getEventsByCategory } from '../data/events.js'
 import CategoryHeader from '../components/CategoryHeader.jsx'
 import SportsTabs from '../components/sports/SportsTabs.jsx'
 import LeagueCard from '../components/sports/LeagueCard.jsx'
@@ -9,21 +8,11 @@ import Section from '../components/Section.jsx'
 import { SkeletonCard } from '../components/Skeleton.jsx'
 import { useSportsEvents } from '../lib/useSportsEvents.js'
 
-const localFallback = getEventsByCategory('sports')
-
 export default function Sports() {
   const config = CATEGORIES.sports
-  const { events, loading, isLive } = useSportsEvents(
-    { size: 24 },
-    { fallback: localFallback },
-  )
+  const { events, loading } = useSportsEvents({ size: 24 })
 
   const featured = [...events]
-    .sort((a, b) => {
-      const aBadge = a.badge ? 0 : 1
-      const bBadge = b.badge ? 0 : 1
-      return aBadge - bBadge
-    })
     .slice(0, 8)
     .map((e) => ({
       ...e,
@@ -60,8 +49,8 @@ export default function Sports() {
         title="Featured Events"
         subtitle={
           loading
-            ? 'Loading live fixtures from TheSportsDB...'
-            : `${events.length} sports events available — handpicked for you.`
+            ? 'Loading upcoming fixtures...'
+            : `${events.length} upcoming sports events.`
         }
         background="gray"
       >
@@ -72,13 +61,10 @@ export default function Sports() {
             ))}
           </div>
         ) : (
-          <EventGrid events={featured} />
-        )}
-
-        {isLive && (
-          <p className="mt-3 text-xs text-gray-400">
-            Live data from TheSportsDB · synced hourly
-          </p>
+          <EventGrid
+            events={featured}
+            emptyMessage="No upcoming sports fixtures right now — check back soon."
+          />
         )}
       </Section>
     </div>
