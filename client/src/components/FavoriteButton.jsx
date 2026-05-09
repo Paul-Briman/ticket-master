@@ -19,6 +19,10 @@ const HeartIcon = ({ filled, size = 18 }) => (
 )
 
 export default function FavoriteButton({
+  event,
+  // Legacy shorthand props — still supported. Prefer passing the
+  // full `event` object so we can render the favorite without
+  // looking it up against any catalog.
   eventId,
   eventTitle,
   variant = 'overlay',
@@ -27,7 +31,9 @@ export default function FavoriteButton({
   const { isFavorite, toggleFavorite, canFavorite } = useFavorites()
   const { toast } = useToast()
   const navigate = useNavigate()
-  const active = canFavorite && isFavorite(eventId)
+  const id = event?.id || eventId
+  const title = event?.title || eventTitle
+  const active = canFavorite && id && isFavorite(id)
 
   function handleClick(e) {
     e.preventDefault()
@@ -37,10 +43,12 @@ export default function FavoriteButton({
       navigate('/login', { state: { from: window.location.pathname } })
       return
     }
-    const added = toggleFavorite(eventId)
+    if (!id) return
+    const payload = event || { id, title }
+    const added = toggleFavorite(payload)
     toast(
       added
-        ? `Saved${eventTitle ? ` “${eventTitle}”` : ''} to your favorites`
+        ? `Saved${title ? ` "${title}"` : ''} to your favorites`
         : 'Removed from favorites',
       { type: added ? 'success' : 'info' },
     )

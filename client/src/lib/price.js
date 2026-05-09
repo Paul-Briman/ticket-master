@@ -116,9 +116,23 @@ function buildAvailability(eventId, optionKey, tier) {
   }
 }
 
+// Map an internal tier key to the price field on the event's pricing
+// object. Concerts/arts/family use their own labels but still map back
+// to standard/premium/vip economically.
+function tierBasePrice(pricing, tierKey, fallbackBase) {
+  if (!pricing) return fallbackBase
+  if (tierKey === 'vip' || tierKey === 'front-row' || tierKey === 'orchestra') {
+    return pricing.vip ?? fallbackBase
+  }
+  if (tierKey === 'premium' || tierKey === 'floor' || tierKey === 'mezzanine') {
+    return pricing.premium ?? fallbackBase
+  }
+  return pricing.standard ?? fallbackBase
+}
+
 export function getSeatOptions(event) {
   if (!event) return []
-  const base = parsePrice(event.price)
+  const fallbackBase = parsePrice(event.price)
   const rand = makeRng(`${event.id}-rows`)
   const configs = tierConfigs(event.category)
   const options = []
@@ -129,6 +143,10 @@ export function getSeatOptions(event) {
     const [low, high] = cfg.rowRange
     const span = high - low || 1
 
+    // Use the per-tier base from the event's editable pricing object;
+    // fall back to legacy synthesized base when admin hasn't set tiers.
+    const tierBase = tierBasePrice(event.pricing, cfg.tier, fallbackBase)
+
     rows.forEach((row) => {
       const t = (row - low) / span
       const mult = lerp(t, cfg.priceRange[0], cfg.priceRange[1])
@@ -138,7 +156,7 @@ export function getSeatOptions(event) {
         row,
         tier: cfg.tier,
         tierLabel: cfg.tierLabel,
-        price: r(base, mult),
+        price: r(tierBase, mult),
       })
     })
   }

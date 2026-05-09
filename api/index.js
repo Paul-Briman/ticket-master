@@ -5,6 +5,7 @@ import sportsRouter from '../lib/routes/sports.js'
 import concertsRouter from '../lib/routes/concerts.js'
 import artsRouter from '../lib/routes/arts.js'
 import familyRouter from '../lib/routes/family.js'
+import adminEventsRouter from '../lib/routes/adminEvents.js'
 
 const app = express()
 
@@ -93,6 +94,7 @@ app.use('/api/sports', sportsRouter)
 app.use('/api/concerts', concertsRouter)
 app.use('/api/arts', artsRouter)
 app.use('/api/family', familyRouter)
+app.use('/api/admin/events', adminEventsRouter)
 
 app.use((req, res) => {
   res.status(404).json({ error: 'Not found', path: req.url })

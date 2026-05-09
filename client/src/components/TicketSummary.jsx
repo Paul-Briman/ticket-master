@@ -88,7 +88,7 @@ export default function TicketSummary({
         to="/checkout"
         state={
           option
-            ? { eventId: event.id, optionKey: option.key, quantity }
+            ? { event, eventId: event.id, optionKey: option.key, quantity }
             : null
         }
         className="mt-5 block"

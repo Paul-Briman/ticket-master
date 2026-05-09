@@ -78,6 +78,17 @@ export const api = {
   confirmPayment: (orderId) =>
     request('/api/confirm-payment', { method: 'POST', body: { orderId } }),
 
+  adminEvents: () => request('/api/admin/events'),
+  adminEventOverride: (id, patch) =>
+    request(`/api/admin/events/${encodeURIComponent(id)}`, {
+      method: 'PATCH',
+      body: patch,
+    }),
+  adminClearEventOverride: (id) =>
+    request(`/api/admin/events/${encodeURIComponent(id)}/override`, {
+      method: 'DELETE',
+    }),
+
   sportsEvents: (params = {}) => {
     const search = new URLSearchParams()
     Object.entries(params).forEach(([k, v]) => {

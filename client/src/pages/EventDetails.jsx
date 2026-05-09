@@ -14,7 +14,7 @@ import { EVENTS } from '../data/events.js'
 import { formatPrice, getSeatOptions, SERVICE_FEE_RATE } from '../lib/price.js'
 import { recordRecentView } from '../lib/recentlyViewed.js'
 import { parseEventDate } from '../lib/dateParse.js'
-import { useSportsEvent } from '../lib/useSportsEvents.js'
+import { useSportsEvent, useSportsEvents } from '../lib/useSportsEvents.js'
 
 export default function EventDetails() {
   const { id } = useParams()
@@ -31,7 +31,7 @@ export default function EventDetails() {
 
   useEffect(() => {
     window.scrollTo({ top: 0, behavior: 'auto' })
-    if (event?.id) recordRecentView(event.id)
+    if (event?.id) recordRecentView(event)
   }, [id, event?.id])
 
   const targetDate = useMemo(() => parseEventDate(event?.date), [event?.date])
@@ -77,9 +77,20 @@ export default function EventDetails() {
   const subtotal = (selectedOption?.price || 0) * quantity
   const total = subtotal + subtotal * SERVICE_FEE_RATE
 
-  const related = EVENTS.filter(
-    (e) => e.category === event.category && e.id !== event.id,
-  ).slice(0, 6)
+  // Recommendations:
+  // - Sports events → fetch live league fixtures from the API
+  // - Curated categories → filter the curated catalog
+  // Never mix mock sports into the live flow.
+  const isSportsEvent = event.category === 'sports'
+  const { events: liveRelated } = useSportsEvents(
+    { league: event.league, size: 8 },
+    { enabled: isSportsEvent && !!event.league },
+  )
+  const related = isSportsEvent
+    ? liveRelated.filter((e) => e.id !== event.id).slice(0, 6)
+    : EVENTS.filter(
+        (e) => e.category === event.category && e.id !== event.id,
+      ).slice(0, 6)
 
   return (
     <div className="flex flex-col pb-24 md:pb-0">
@@ -112,11 +123,7 @@ export default function EventDetails() {
                       About this event
                     </h2>
                   </div>
-                  <FavoriteButton
-                    eventId={event.id}
-                    eventTitle={event.title}
-                    variant="inline"
-                  />
+                  <FavoriteButton event={event} variant="inline" />
                 </div>
                 <p className="mt-3 text-sm leading-relaxed text-gray-600 md:text-base">
                   Don’t miss <strong>{event.title}</strong> at{' '}
@@ -179,7 +186,7 @@ export default function EventDetails() {
         disabled={!selectedOption}
         checkoutState={
           selectedOption
-            ? { eventId: event.id, optionKey: selectedOption.key, quantity }
+            ? { event, eventId: event.id, optionKey: selectedOption.key, quantity }
             : null
         }
       />

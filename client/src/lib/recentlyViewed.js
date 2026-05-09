@@ -3,34 +3,67 @@ import { useCallback, useEffect, useState } from 'react'
 const KEY = 'tm_recently_viewed'
 const MAX = 12
 
+const STORED_FIELDS = [
+  'id',
+  'title',
+  'date',
+  'image',
+  'venue',
+  'city',
+  'country',
+  'price',
+  'category',
+  'league',
+  'badge',
+  'badgeType',
+  'homeTeam',
+  'awayTeam',
+  'homeCrest',
+  'awayCrest',
+  'provider',
+]
+
+function shrink(event) {
+  if (!event || !event.id) return null
+  const out = {}
+  for (const f of STORED_FIELDS) {
+    if (event[f] !== undefined) out[f] = event[f]
+  }
+  return out
+}
+
 function read() {
   try {
     const raw = JSON.parse(localStorage.getItem(KEY) || '[]')
-    return Array.isArray(raw) ? raw : []
+    if (!Array.isArray(raw)) return []
+    // Drop legacy id-only entries — we don't fabricate metadata.
+    return raw.filter((e) => e && typeof e === 'object' && e.id)
   } catch {
     return []
   }
 }
 
-export function recordRecentView(eventId) {
-  if (!eventId) return
-  const list = read().filter((id) => id !== eventId)
-  list.unshift(eventId)
+export function recordRecentView(event) {
+  if (!event?.id) return
+  const snapshot = shrink(event)
+  if (!snapshot) return
+  const list = read().filter((e) => e.id !== snapshot.id)
+  list.unshift(snapshot)
   localStorage.setItem(KEY, JSON.stringify(list.slice(0, MAX)))
 }
 
 export function useRecentlyViewed() {
-  const [ids, setIds] = useState([])
+  const [items, setItems] = useState([])
 
   useEffect(() => {
-    setIds(read())
+    setItems(read())
     function onStorage(e) {
-      if (e.key === KEY) setIds(read())
+      if (e.key === KEY) setItems(read())
     }
     window.addEventListener('storage', onStorage)
     return () => window.removeEventListener('storage', onStorage)
   }, [])
 
-  const refresh = useCallback(() => setIds(read()), [])
-  return { recentIds: ids, refresh }
+  const refresh = useCallback(() => setItems(read()), [])
+  return { recent: items, refresh }
 }

@@ -14,15 +14,21 @@ export default function Checkout() {
   const state = location.state || {}
   const { user } = useAuth()
 
+  // Prefer the full event passed via navigation state (works for both
+  // live sports and curated events). Fall back to EVENTS lookup by id
+  // only for curated catalog ids. Never silently default to a random
+  // mock event — show an error state instead.
   const event = useMemo(() => {
+    if (state.event && state.event.id) return state.event
     if (state.eventId) {
       const match = EVENTS.find((e) => e.id === state.eventId)
       if (match) return match
     }
-    return EVENTS[0]
-  }, [state.eventId])
+    return null
+  }, [state.event, state.eventId])
 
   const option = useMemo(() => {
+    if (!event) return null
     const options = getSeatOptions(event)
     if (state.optionKey) {
       const match = options.find((o) => o.key === state.optionKey)
@@ -83,6 +89,25 @@ export default function Checkout() {
 
   if (status === 'pending' && pendingOrder) {
     return <PendingScreen order={pendingOrder} event={event} />
+  }
+
+  if (!event) {
+    return (
+      <div className="bg-gray-50">
+        <div className="mx-auto max-w-2xl px-4 py-16 text-center">
+          <h1 className="text-2xl font-bold text-gray-900">No event selected</h1>
+          <p className="mt-2 text-sm text-gray-500">
+            Pick an event and a section first, then come back to checkout.
+          </p>
+          <Link
+            to="/"
+            className="mt-6 inline-block text-sm font-medium text-brand hover:text-brand-dark"
+          >
+            ← Back to home
+          </Link>
+        </div>
+      </div>
+    )
   }
 
   return (

@@ -6,16 +6,13 @@ import LiveSportsSection from '../components/LiveSportsSection.jsx'
 import LiveEventsSection from '../components/LiveEventsSection.jsx'
 import { CityFeatureCard } from '../components/CityCard.jsx'
 import LeagueCard from '../components/sports/LeagueCard.jsx'
-import { EVENTS } from '../data/events.js'
 import { POPULAR_US_CITIES } from '../data/cities.js'
 import { SPORTS_LEAGUES } from '../data/leagues.js'
 import { useRecentlyViewed } from '../lib/recentlyViewed.js'
 
 export default function Home() {
-  const { recentIds } = useRecentlyViewed()
-  const recentEvents = recentIds
-    .map((id) => EVENTS.find((e) => e.id === id))
-    .filter(Boolean)
+  const { recent } = useRecentlyViewed()
+  const recentEvents = recent
 
   return (
     <div className="flex flex-col">

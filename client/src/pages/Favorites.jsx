@@ -2,17 +2,13 @@ import { Link } from 'react-router-dom'
 import EventCard from '../components/EventCard.jsx'
 import Button from '../components/Button.jsx'
 import { useFavorites } from '../lib/favorites.js'
-import { EVENTS } from '../data/events.js'
 
 export default function Favorites() {
-  const { favoriteIds, favoriteCount } = useFavorites()
-  const events = favoriteIds
-    .map((id) => EVENTS.find((e) => e.id === id))
-    .filter(Boolean)
-    .map((e) => ({
-      ...e,
-      location: e.venue ? `${e.venue}, ${e.city}` : e.city,
-    }))
+  const { favorites, favoriteCount } = useFavorites()
+  const events = favorites.map((e) => ({
+    ...e,
+    location: e.venue ? `${e.venue}, ${e.city}` : e.city,
+  }))
 
   return (
     <div className="bg-gray-50">

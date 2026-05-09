@@ -61,20 +61,21 @@ function VersusVisual({ homeTeam, awayTeam, homeCrest, awayCrest }) {
   )
 }
 
-export default function EventCard({
-  id,
-  title,
-  date,
-  location,
-  price,
-  image,
-  badge,
-  badgeType = 'hot',
-  homeTeam,
-  awayTeam,
-  homeCrest,
-  awayCrest,
-}) {
+export default function EventCard(props) {
+  const {
+    id,
+    title,
+    date,
+    location,
+    price,
+    image,
+    badge,
+    badgeType = 'hot',
+    homeTeam,
+    awayTeam,
+    homeCrest,
+    awayCrest,
+  } = props
   const href = id ? `/event/${id}` : '#'
   const hasVersus = !!(homeCrest && awayCrest && homeTeam && awayTeam)
 
@@ -84,7 +85,7 @@ export default function EventCard({
       className="group flex h-full flex-col overflow-hidden rounded-lg border border-gray-200 bg-white transition-all duration-200 hover:-translate-y-1 hover:border-gray-300 hover:shadow-md"
     >
       <div className="relative aspect-[4/3] w-full overflow-hidden bg-gray-100">
-        {id && <FavoriteButton eventId={id} eventTitle={title} />}
+        {id && <FavoriteButton event={props} />}
 
         {hasVersus ? (
           <VersusVisual
