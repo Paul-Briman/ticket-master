@@ -89,6 +89,11 @@ export const api = {
       method: 'DELETE',
     }),
 
+  // Unified event detail — DB-first with live fallback and admin
+  // override applied. Works for sports, concerts, arts, family.
+  event: (id) =>
+    request(`/api/events/${encodeURIComponent(id)}`, { auth: false }),
+
   sportsEvents: (params = {}) => {
     const search = new URLSearchParams()
     Object.entries(params).forEach(([k, v]) => {

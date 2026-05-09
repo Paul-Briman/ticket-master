@@ -14,20 +14,17 @@ import { EVENTS } from '../data/events.js'
 import { formatPrice, getSeatOptions, SERVICE_FEE_RATE } from '../lib/price.js'
 import { recordRecentView } from '../lib/recentlyViewed.js'
 import { parseEventDate } from '../lib/dateParse.js'
-import { useSportsEvent, useSportsEvents } from '../lib/useSportsEvents.js'
+import { useSportsEvents } from '../lib/useSportsEvents.js'
+import { useEvent } from '../lib/useEvent.js'
 
 export default function EventDetails() {
   const { id } = useParams()
-  const localEvent = EVENTS.find((e) => e.id === id)
-  const isLiveId =
-    !localEvent &&
-    typeof id === 'string' &&
-    (id.startsWith('sdb-') || id.startsWith('fd-'))
-  const { event: liveEvent, loading: liveLoading, error: liveError } = useSportsEvent(
-    isLiveId ? id : null,
-    { enabled: isLiveId },
-  )
-  const event = localEvent || liveEvent
+  // Every detail page goes through the unified DB-first endpoint so
+  // admin overrides (pricing, venue, image, etc.) always reflect — no
+  // direct catalog reads, no per-category branching.
+  const { event, loading: liveLoading, error: liveError } = useEvent(id, {
+    enabled: !!id,
+  })
 
   useEffect(() => {
     window.scrollTo({ top: 0, behavior: 'auto' })
@@ -78,9 +75,10 @@ export default function EventDetails() {
   const total = subtotal + subtotal * SERVICE_FEE_RATE
 
   // Recommendations:
-  // - Sports events → fetch live league fixtures from the API
-  // - Curated categories → filter the curated catalog
-  // Never mix mock sports into the live flow.
+  // - Sports events → fetch live league fixtures from the API (which
+  //   already snapshots and applies overrides on the way out)
+  // - Curated categories → filter the curated catalog (overrides only
+  //   matter on the detail page itself, which is DB-first)
   const isSportsEvent = event.category === 'sports'
   const { events: liveRelated } = useSportsEvents(
     { league: event.league, size: 8 },

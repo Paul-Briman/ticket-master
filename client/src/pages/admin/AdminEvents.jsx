@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react'
 import EventOverrideForm from '../../components/admin/EventOverrideForm.jsx'
 import { api } from '../../lib/api.js'
 import { SkeletonRow } from '../../components/Skeleton.jsx'
+import { invalidateEventCache } from '../../lib/useEvent.js'
 
 const CATEGORY_LABELS = {
   sports: 'Sports',
@@ -65,6 +66,9 @@ export default function AdminEvents() {
 
   async function handleSave(id, patch) {
     await api.adminEventOverride(id, patch)
+    // Bust the client-side detail cache so a preview reflects fresh
+    // pricing/metadata immediately on the next visit.
+    invalidateEventCache(id)
     await load()
     setEditing(null)
   }
@@ -72,6 +76,7 @@ export default function AdminEvents() {
   async function handleClearOverride(id) {
     if (!window.confirm('Revert this event to its live provider data?')) return
     await api.adminClearEventOverride(id)
+    invalidateEventCache(id)
     await load()
   }
 

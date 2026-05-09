@@ -4,28 +4,27 @@ import Button from '../components/Button.jsx'
 import Input from '../components/Input.jsx'
 import OrderSummary from '../components/OrderSummary.jsx'
 import CryptoPayment from '../components/CryptoPayment.jsx'
-import { EVENTS } from '../data/events.js'
 import { getSeatOptions, SERVICE_FEE_RATE, formatPrice } from '../lib/price.js'
 import { api } from '../lib/api.js'
 import { useAuth } from '../lib/auth.jsx'
+import { useEvent } from '../lib/useEvent.js'
 
 export default function Checkout() {
   const location = useLocation()
   const state = location.state || {}
   const { user } = useAuth()
 
-  // Prefer the full event passed via navigation state (works for both
-  // live sports and curated events). Fall back to EVENTS lookup by id
-  // only for curated catalog ids. Never silently default to a random
-  // mock event — show an error state instead.
-  const event = useMemo(() => {
-    if (state.event && state.event.id) return state.event
-    if (state.eventId) {
-      const match = EVENTS.find((e) => e.id === state.eventId)
-      if (match) return match
-    }
-    return null
-  }, [state.event, state.eventId])
+  // The full event passed via navigation state seeds the page so we
+  // can render instantly, but the source of truth for pricing is the
+  // unified detail endpoint (DB ⊕ override). useEvent will swap in the
+  // canonical record as soon as it resolves, picking up any admin
+  // pricing edits that happened after the user clicked Checkout.
+  const seededId = state.event?.id || state.eventId || null
+  const { event: liveEvent } = useEvent(seededId, {
+    enabled: !!seededId,
+    seed: state.event || null,
+  })
+  const event = liveEvent || state.event || null
 
   const option = useMemo(() => {
     if (!event) return null

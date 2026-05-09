@@ -6,6 +6,7 @@ import concertsRouter from '../lib/routes/concerts.js'
 import artsRouter from '../lib/routes/arts.js'
 import familyRouter from '../lib/routes/family.js'
 import adminEventsRouter from '../lib/routes/adminEvents.js'
+import eventsRouter from '../lib/routes/events.js'
 
 const app = express()
 
@@ -90,6 +91,7 @@ app.get('/api/providers', (req, res) => {
 
 app.use('/api', authRouter)
 app.use('/api', ordersRouter)
+app.use('/api/events', eventsRouter)
 app.use('/api/sports', sportsRouter)
 app.use('/api/concerts', concertsRouter)
 app.use('/api/arts', artsRouter)
