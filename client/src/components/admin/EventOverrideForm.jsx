@@ -83,6 +83,13 @@ export default function EventOverrideForm({ open, event, onClose, onSave }) {
     }
   }
 
+  // Surface a helpful banner when the API didn't supply some location
+  // fields — admin should know they're filling in (not seeing a bug).
+  const missingFields = []
+  if (!form.venue) missingFields.push('venue')
+  if (!form.city) missingFields.push('city')
+  if (!form.country) missingFields.push('country')
+
   return (
     <Modal
       open={open}
@@ -114,6 +121,17 @@ export default function EventOverrideForm({ open, event, onClose, onSave }) {
           </p>
         </div>
 
+        {missingFields.length > 0 && (
+          <div className="rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-800">
+            The live API didn't supply{' '}
+            <span className="font-semibold">
+              {missingFields.join(', ')}
+            </span>{' '}
+            for this event. Fill these in to publish complete details — your
+            entries will be saved and reused on every future load.
+          </div>
+        )}
+
         <Input
           label="Title"
           value={form.title || ''}
@@ -142,6 +160,7 @@ export default function EventOverrideForm({ open, event, onClose, onSave }) {
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
           <Input
             label="Venue"
+            placeholder="e.g. Wembley Stadium"
             value={form.venue || ''}
             onChange={(e) => update('venue', e.target.value)}
           />
@@ -153,11 +172,13 @@ export default function EventOverrideForm({ open, event, onClose, onSave }) {
           />
           <Input
             label="City"
+            placeholder="e.g. London"
             value={form.city || ''}
             onChange={(e) => update('city', e.target.value)}
           />
           <Input
             label="Country"
+            placeholder="e.g. England"
             value={form.country || ''}
             onChange={(e) => update('country', e.target.value)}
           />
