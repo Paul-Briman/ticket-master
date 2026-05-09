@@ -42,6 +42,16 @@ export default function EventDetails() {
     setQuantity(1)
   }, [id])
 
+  // IMPORTANT: this hook MUST run on every render — including the
+  // loading/not-found render paths below — so its position in the
+  // hooks order stays stable. Use optional chaining; the hook is
+  // disabled until we have a sports event with a league.
+  const isSportsEvent = event?.category === 'sports'
+  const { events: liveRelated } = useSportsEvents(
+    { league: event?.league, size: 8 },
+    { enabled: !!isSportsEvent && !!event?.league },
+  )
+
   if (liveLoading) {
     return (
       <div className="container-page py-20 text-center">
@@ -75,15 +85,8 @@ export default function EventDetails() {
   const total = subtotal + subtotal * SERVICE_FEE_RATE
 
   // Recommendations:
-  // - Sports events → fetch live league fixtures from the API (which
-  //   already snapshots and applies overrides on the way out)
-  // - Curated categories → filter the curated catalog (overrides only
-  //   matter on the detail page itself, which is DB-first)
-  const isSportsEvent = event.category === 'sports'
-  const { events: liveRelated } = useSportsEvents(
-    { league: event.league, size: 8 },
-    { enabled: isSportsEvent && !!event.league },
-  )
+  // - Sports events → live league fixtures (already fetched above)
+  // - Curated categories → filter the curated catalog
   const related = isSportsEvent
     ? liveRelated.filter((e) => e.id !== event.id).slice(0, 6)
     : EVENTS.filter(
