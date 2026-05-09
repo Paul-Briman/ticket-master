@@ -2,6 +2,7 @@ import { Routes, Route } from 'react-router-dom'
 import MainLayout from './layouts/MainLayout.jsx'
 import AdminLayout from './layouts/AdminLayout.jsx'
 import ProtectedRoute from './components/ProtectedRoute.jsx'
+import ErrorBoundary from './components/ErrorBoundary.jsx'
 import Home from './pages/Home.jsx'
 import EventDetails from './pages/EventDetails.jsx'
 import Login from './pages/Login.jsx'
@@ -39,7 +40,14 @@ export default function App() {
         <Route path="/cities" element={<Cities />} />
         <Route path="/city/:name" element={<CityPage />} />
 
-        <Route path="/event/:id" element={<EventDetails />} />
+        <Route
+          path="/event/:id"
+          element={
+            <ErrorBoundary>
+              <EventDetails />
+            </ErrorBoundary>
+          }
+        />
 
         <Route path="/login" element={<Login />} />
         <Route path="/signup" element={<Signup />} />
@@ -51,7 +59,9 @@ export default function App() {
           path="/checkout"
           element={
             <ProtectedRoute>
-              <Checkout />
+              <ErrorBoundary>
+                <Checkout />
+              </ErrorBoundary>
             </ProtectedRoute>
           }
         />
