@@ -19,7 +19,10 @@ import { useSportsEvent } from '../lib/useSportsEvents.js'
 export default function EventDetails() {
   const { id } = useParams()
   const localEvent = EVENTS.find((e) => e.id === id)
-  const isLiveId = !localEvent && typeof id === 'string' && id.startsWith('sdb-')
+  const isLiveId =
+    !localEvent &&
+    typeof id === 'string' &&
+    (id.startsWith('sdb-') || id.startsWith('fd-'))
   const { event: liveEvent, loading: liveLoading, error: liveError } = useSportsEvent(
     isLiveId ? id : null,
     { enabled: isLiveId },
