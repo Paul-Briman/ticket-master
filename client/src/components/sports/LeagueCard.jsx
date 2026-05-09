@@ -1,10 +1,22 @@
 import { Link } from 'react-router-dom'
 import { leagueImg } from '../../lib/image.js'
-import { getEventsByLeague } from '../../data/events.js'
+import { useLeagueCounts } from '../../lib/useLeagueCounts.js'
 
 export default function LeagueCard({ league, lock = 1 }) {
-  const eventCount = getEventsByLeague(league.key).length
+  const { counts, loading } = useLeagueCounts()
+  const eventCount = counts[league.key]
   const image = leagueImg(league.key, { w: 600, h: 450, lock })
+
+  let countLabel
+  if (loading && eventCount === undefined) {
+    countLabel = 'Loading...'
+  } else if (eventCount === undefined || eventCount === null) {
+    countLabel = 'View league'
+  } else if (eventCount === 0) {
+    countLabel = 'No upcoming events'
+  } else {
+    countLabel = `${eventCount} upcoming event${eventCount === 1 ? '' : 's'}`
+  }
 
   return (
     <Link
@@ -31,11 +43,7 @@ export default function LeagueCard({ league, lock = 1 }) {
             {league.name}
           </h3>
         </div>
-        <p className="mt-1 text-xs text-white/80 md:text-sm">
-          {eventCount > 0
-            ? `${eventCount} event${eventCount === 1 ? '' : 's'} available`
-            : 'Coming soon'}
-        </p>
+        <p className="mt-1 text-xs text-white/80 md:text-sm">{countLabel}</p>
       </div>
     </Link>
   )
