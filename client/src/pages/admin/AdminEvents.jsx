@@ -1,5 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import EventOverrideForm from '../../components/admin/EventOverrideForm.jsx'
+import CreateEventForm from '../../components/admin/CreateEventForm.jsx'
+import Button from '../../components/Button.jsx'
 import { api } from '../../lib/api.js'
 import { SkeletonRow } from '../../components/Skeleton.jsx'
 import { invalidateEventCache } from '../../lib/useEvent.js'
@@ -40,6 +42,7 @@ export default function AdminEvents() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
   const [editing, setEditing] = useState(null)
+  const [creating, setCreating] = useState(false)
   const [filter, setFilter] = useState('all')
   const [search, setSearch] = useState('')
 
@@ -89,9 +92,29 @@ export default function AdminEvents() {
     await load()
   }
 
+  async function handleCreate(payload) {
+    const result = await api.adminCreateEvent(payload)
+    // Bust every list cache so the new event appears on the public
+    // site instantly without waiting out the 5-min TTL.
+    invalidateAllPublicCaches(result?.event?.id)
+    await load()
+    setCreating(false)
+    return result
+  }
+
+  async function handleDelete(event) {
+    const ok = window.confirm(
+      `Delete "${event.title}"? This permanently removes the admin-created event.`,
+    )
+    if (!ok) return
+    await api.adminDeleteEvent(event.id)
+    invalidateAllPublicCaches(event.id)
+    await load()
+  }
+
   return (
     <div className="flex flex-col gap-6">
-      <header className="flex flex-wrap items-center justify-between gap-3">
+      <header className="flex flex-wrap items-start justify-between gap-3">
         <div>
           <h1 className="text-2xl font-bold text-gray-900 md:text-3xl">
             Events
@@ -99,9 +122,12 @@ export default function AdminEvents() {
           <p className="text-sm text-gray-500">
             {loading
               ? 'Loading...'
-              : `${events.length} event${events.length === 1 ? '' : 's'} across live providers and curated catalog.`}
+              : `${events.length} event${events.length === 1 ? '' : 's'} across live providers, curated catalog, and admin-created.`}
           </p>
         </div>
+        <Button type="button" onClick={() => setCreating(true)} className="shrink-0">
+          + Create event
+        </Button>
       </header>
 
       <div className="flex flex-wrap items-center gap-2">
@@ -209,7 +235,12 @@ export default function AdminEvents() {
                           <span className="text-xs text-gray-600">
                             {event.provider || '—'}
                           </span>
-                          {event.adminEdited && (
+                          {event.adminCreated && (
+                            <span className="inline-block rounded-full bg-emerald-50 px-2 py-0.5 text-[10px] font-semibold text-emerald-700">
+                              admin created
+                            </span>
+                          )}
+                          {!event.adminCreated && event.adminEdited && (
                             <span className="inline-block rounded-full bg-blue-50 px-2 py-0.5 text-[10px] font-semibold text-brand">
                               admin override
                             </span>
@@ -225,14 +256,24 @@ export default function AdminEvents() {
                           >
                             Edit
                           </button>
-                          {event.adminEdited && (
+                          {event.adminCreated ? (
                             <button
                               type="button"
-                              onClick={() => handleClearOverride(event.id)}
+                              onClick={() => handleDelete(event)}
                               className="rounded-md border border-gray-200 bg-white px-2.5 py-1 text-xs font-medium text-gray-700 transition-colors hover:border-red-300 hover:text-red-600"
                             >
-                              Revert
+                              Delete
                             </button>
+                          ) : (
+                            event.adminEdited && (
+                              <button
+                                type="button"
+                                onClick={() => handleClearOverride(event.id)}
+                                className="rounded-md border border-gray-200 bg-white px-2.5 py-1 text-xs font-medium text-gray-700 transition-colors hover:border-red-300 hover:text-red-600"
+                              >
+                                Revert
+                              </button>
+                            )
                           )}
                         </div>
                       </td>
@@ -260,6 +301,12 @@ export default function AdminEvents() {
         event={editing}
         onClose={() => setEditing(null)}
         onSave={handleSave}
+      />
+
+      <CreateEventForm
+        open={creating}
+        onClose={() => setCreating(false)}
+        onCreated={handleCreate}
       />
     </div>
   )

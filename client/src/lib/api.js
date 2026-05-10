@@ -88,6 +88,14 @@ export const api = {
     request(`/api/admin/events/${encodeURIComponent(id)}/override`, {
       method: 'DELETE',
     }),
+  adminCreateEvent: (payload) =>
+    request('/api/admin/events', { method: 'POST', body: payload }),
+  adminDeleteEvent: (id) =>
+    request(`/api/admin/events/${encodeURIComponent(id)}`, { method: 'DELETE' }),
+
+  adminUsers: () => request('/api/admin/users'),
+  adminDeleteUser: (email) =>
+    request(`/api/admin/users/${encodeURIComponent(email)}`, { method: 'DELETE' }),
 
   // Unified event detail — DB-first with live fallback and admin
   // override applied. Works for sports, concerts, arts, family.

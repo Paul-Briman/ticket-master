@@ -10,43 +10,83 @@ function initials(name = '') {
     .join('')
 }
 
+function formatDate(iso) {
+  if (!iso) return '—'
+  const d = new Date(iso)
+  if (Number.isNaN(d.getTime())) return '—'
+  return d.toLocaleDateString(undefined, {
+    month: 'short',
+    day: 'numeric',
+    year: 'numeric',
+  })
+}
+
 export default function AdminUsers() {
-  const [orders, setOrders] = useState([])
+  const [users, setUsers] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
+  const [orderCounts, setOrderCounts] = useState({})
+  const [search, setSearch] = useState('')
+  const [deletingEmail, setDeletingEmail] = useState(null)
+  const [deleteError, setDeleteError] = useState('')
+
+  async function load() {
+    setLoading(true)
+    setError('')
+    try {
+      const [usersRes, ordersRes] = await Promise.all([
+        api.adminUsers(),
+        api.adminOrders().catch(() => ({ orders: [] })),
+      ])
+      const list = Array.isArray(usersRes?.users) ? usersRes.users : []
+      // Tally orders per email so the admin can still see customer
+      // engagement at a glance — same number AdminUsers used to derive.
+      const counts = {}
+      for (const o of ordersRes?.orders || []) {
+        const k = (o.email || '').toLowerCase()
+        if (k) counts[k] = (counts[k] || 0) + 1
+      }
+      setOrderCounts(counts)
+      setUsers(list)
+    } catch (err) {
+      setError(err.message || 'Could not load users.')
+    } finally {
+      setLoading(false)
+    }
+  }
 
   useEffect(() => {
-    let cancelled = false
-    api
-      .adminOrders()
-      .then((res) => {
-        if (!cancelled) setOrders(res.orders || [])
-      })
-      .catch((err) => {
-        if (!cancelled) setError(err.message || 'Could not load users.')
-      })
-      .finally(() => {
-        if (!cancelled) setLoading(false)
-      })
-    return () => {
-      cancelled = true
-    }
+    load()
   }, [])
 
-  const users = useMemo(() => {
-    const map = new Map()
-    for (const o of orders) {
-      const key = (o.email || '').toLowerCase()
-      if (!key) continue
-      const existing = map.get(key)
-      if (existing) {
-        existing.orderCount += 1
-      } else {
-        map.set(key, { name: o.user || key, email: o.email, orderCount: 1 })
-      }
+  const filtered = useMemo(() => {
+    if (!search) return users
+    const q = search.toLowerCase()
+    return users.filter(
+      (u) =>
+        (u.email || '').toLowerCase().includes(q) ||
+        (u.name || '').toLowerCase().includes(q) ||
+        (u.role || '').toLowerCase().includes(q),
+    )
+  }, [users, search])
+
+  async function handleDelete(user) {
+    if (!user.deletable) return
+    const ok = window.confirm(
+      `Delete account for ${user.email}?\n\nThis permanently removes the user and is not reversible.`,
+    )
+    if (!ok) return
+    setDeleteError('')
+    setDeletingEmail(user.email)
+    try {
+      await api.adminDeleteUser(user.email)
+      await load()
+    } catch (err) {
+      setDeleteError(err.message || 'Failed to delete user.')
+    } finally {
+      setDeletingEmail(null)
     }
-    return [...map.values()].sort((a, b) => b.orderCount - a.orderCount)
-  }, [orders])
+  }
 
   return (
     <div className="flex flex-col gap-6">
@@ -55,13 +95,28 @@ export default function AdminUsers() {
         <p className="text-sm text-gray-500">
           {loading
             ? 'Loading users...'
-            : `${users.length} customer${users.length === 1 ? '' : 's'} have placed orders.`}
+            : `${users.length} registered user${users.length === 1 ? '' : 's'}.`}
         </p>
       </header>
+
+      <div className="flex flex-wrap items-center gap-2">
+        <input
+          type="text"
+          placeholder="Search name, email, role..."
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          className="min-w-[200px] flex-1 rounded-lg border border-gray-300 px-3 py-1.5 text-sm focus:border-brand focus:outline-none focus:ring-2 focus:ring-brand/30"
+        />
+      </div>
 
       {error && (
         <div className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
           {error}
+        </div>
+      )}
+      {deleteError && (
+        <div className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+          {deleteError}
         </div>
       )}
 
@@ -72,34 +127,79 @@ export default function AdminUsers() {
               <tr>
                 <th className="px-4 py-3">Name</th>
                 <th className="px-4 py-3">Email</th>
+                <th className="px-4 py-3">Role</th>
+                <th className="px-4 py-3">Verified</th>
+                <th className="px-4 py-3">Joined</th>
                 <th className="px-4 py-3">Orders</th>
+                <th className="px-4 py-3 text-right">Actions</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100">
-              {users.map((u, i) => (
-                <tr key={u.email + i} className="hover:bg-gray-50/50">
-                  <td className="px-4 py-3">
-                    <div className="flex items-center gap-3">
-                      <span className="flex h-8 w-8 items-center justify-center rounded-full bg-blue-50 text-xs font-bold text-brand">
-                        {initials(u.name) || 'U'}
+              {filtered.map((u) => {
+                const orders = orderCounts[u.email] || 0
+                const isDeleting = deletingEmail === u.email
+                return (
+                  <tr key={u.email} className="hover:bg-gray-50/50">
+                    <td className="px-4 py-3">
+                      <div className="flex items-center gap-3">
+                        <span className="flex h-8 w-8 items-center justify-center rounded-full bg-blue-50 text-xs font-bold text-brand">
+                          {initials(u.name || u.email) || 'U'}
+                        </span>
+                        <span className="font-medium text-gray-900">
+                          {u.name || '—'}
+                        </span>
+                      </div>
+                    </td>
+                    <td className="px-4 py-3 text-gray-600">{u.email}</td>
+                    <td className="px-4 py-3">
+                      <span
+                        className={`inline-block rounded-full border px-2 py-0.5 text-xs font-medium ${
+                          u.role === 'admin'
+                            ? 'border-blue-200 bg-blue-50 text-brand'
+                            : 'border-gray-200 bg-gray-50 text-gray-700'
+                        }`}
+                      >
+                        {u.role || 'user'}
                       </span>
-                      <span className="font-medium text-gray-900">
-                        {u.name}
-                      </span>
-                    </div>
-                  </td>
-                  <td className="px-4 py-3 text-gray-600">{u.email}</td>
-                  <td className="px-4 py-3 text-gray-700">× {u.orderCount}</td>
-                </tr>
-              ))}
-              {!loading && users.length === 0 && (
+                    </td>
+                    <td className="px-4 py-3 text-gray-600">
+                      {u.verified ? (
+                        <span className="text-emerald-700">✓ Verified</span>
+                      ) : (
+                        <span className="text-gray-400">Pending</span>
+                      )}
+                    </td>
+                    <td className="px-4 py-3 text-gray-600">
+                      {formatDate(u.createdAt)}
+                    </td>
+                    <td className="px-4 py-3 text-gray-700">× {orders}</td>
+                    <td className="px-4 py-3 text-right">
+                      <button
+                        type="button"
+                        onClick={() => handleDelete(u)}
+                        disabled={!u.deletable || isDeleting}
+                        title={
+                          u.isPrimaryAdmin
+                            ? 'The primary admin account cannot be deleted.'
+                            : u.isSelf
+                              ? "You can't delete your own account."
+                              : undefined
+                        }
+                        className="rounded-md border border-gray-200 bg-white px-2.5 py-1 text-xs font-medium text-gray-700 transition-colors hover:border-red-300 hover:text-red-600 disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:border-gray-200 disabled:hover:text-gray-700"
+                      >
+                        {isDeleting ? 'Deleting...' : 'Delete'}
+                      </button>
+                    </td>
+                  </tr>
+                )
+              })}
+              {!loading && filtered.length === 0 && (
                 <tr>
                   <td
-                    colSpan={3}
+                    colSpan={7}
                     className="px-4 py-12 text-center text-sm text-gray-500"
                   >
-                    No customers yet — they’ll appear here after the first
-                    order is placed.
+                    No users match your search.
                   </td>
                 </tr>
               )}
