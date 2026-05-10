@@ -18,7 +18,9 @@ function findCityName(slug) {
 export default function CityPage() {
   const { name: slug } = useParams()
   const cityName = findCityName(slug)
-  const { byCity, loading } = useCityEvents()
+  // The city page renders a full event grid for that city, so we
+  // include sports to surface matches alongside concerts/arts/family.
+  const { byCity, loading } = useCityEvents({ includeSports: true })
 
   // Same source as the city card on the homepage / cities page, so
   // the count there and the rendered grid here are guaranteed equal.

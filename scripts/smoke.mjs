@@ -129,6 +129,20 @@ await probe(
 )
 
 await probe(
+  'GET /api/sports?league=world-cup',
+  '/api/sports?league=world-cup&size=12',
+  (res, body) => {
+    const events = body?.events
+    if (!Array.isArray(events)) return { ok: false, note: 'events not array' }
+    if (events.length > 0 && !firstFdEvent) firstFdEvent = events[0]
+    return {
+      ok: events.length > 0,
+      note: `${events.length} events; status=${body?.status}; cache=${body?.cacheSource}`,
+    }
+  },
+)
+
+await probe(
   'GET /api/sports?league=nba',
   '/api/sports?league=nba&size=10',
   (res, body) => {

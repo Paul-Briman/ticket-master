@@ -8,7 +8,9 @@ import {
 import { useCityEvents } from '../lib/useCityEvents.js'
 
 export default function Cities() {
-  const { byCity, loading } = useCityEvents()
+  // Cities page is the one place where city counts SHOULD include
+  // sports — it's the primary city-facing destination.
+  const { byCity, loading } = useCityEvents({ includeSports: true })
   const countFor = (slug) => byCity[slug]?.length ?? 0
 
   return (
