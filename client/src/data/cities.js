@@ -4,15 +4,18 @@ function cityImg(slug, lock = 5) {
   return categoryImg(CITY_TAGS[slug] || slug, { w: 800, h: 500, lock })
 }
 
+// Counts are computed at render time from the live event cache via
+// useCityEvents — no static numbers here. Image stays curated so the
+// hero photo is always set even before any events have loaded.
 export const POPULAR_US_CITIES = [
-  { name: 'New York', slug: 'new-york', eventCount: 720, image: cityImg('new-york', 1) },
-  { name: 'Los Angeles', slug: 'los-angeles', eventCount: 612, image: cityImg('los-angeles', 2) },
-  { name: 'Chicago', slug: 'chicago', eventCount: 480, image: cityImg('chicago', 3) },
-  { name: 'Houston', slug: 'houston', eventCount: 355, image: cityImg('houston', 4) },
-  { name: 'Miami', slug: 'miami', eventCount: 412, image: cityImg('miami', 5) },
-  { name: 'Atlanta', slug: 'atlanta', eventCount: 388, image: cityImg('atlanta', 6) },
-  { name: 'Las Vegas', slug: 'las-vegas', eventCount: 540, image: cityImg('las-vegas', 7) },
-  { name: 'San Francisco', slug: 'san-francisco', eventCount: 430, image: cityImg('san-francisco', 8) },
+  { name: 'New York', slug: 'new-york', image: cityImg('new-york', 1) },
+  { name: 'Los Angeles', slug: 'los-angeles', image: cityImg('los-angeles', 2) },
+  { name: 'Chicago', slug: 'chicago', image: cityImg('chicago', 3) },
+  { name: 'Houston', slug: 'houston', image: cityImg('houston', 4) },
+  { name: 'Miami', slug: 'miami', image: cityImg('miami', 5) },
+  { name: 'Atlanta', slug: 'atlanta', image: cityImg('atlanta', 6) },
+  { name: 'Las Vegas', slug: 'las-vegas', image: cityImg('las-vegas', 7) },
+  { name: 'San Francisco', slug: 'san-francisco', image: cityImg('san-francisco', 8) },
 ]
 
 export const ALL_US_CITIES = [

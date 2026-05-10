@@ -9,10 +9,12 @@ import LeagueCard from '../components/sports/LeagueCard.jsx'
 import { POPULAR_US_CITIES } from '../data/cities.js'
 import { SPORTS_LEAGUES } from '../data/leagues.js'
 import { useRecentlyViewed } from '../lib/recentlyViewed.js'
+import { useCityEvents } from '../lib/useCityEvents.js'
 
 export default function Home() {
   const { recent } = useRecentlyViewed()
   const recentEvents = recent
+  const { byCity, loading: citiesLoading } = useCityEvents()
 
   return (
     <div className="flex flex-col">
@@ -94,7 +96,12 @@ export default function Home() {
       >
         <CardScroller>
           {POPULAR_US_CITIES.map((city) => (
-            <CityFeatureCard key={city.slug} {...city} />
+            <CityFeatureCard
+              key={city.slug}
+              {...city}
+              count={byCity[city.slug]?.length ?? 0}
+              loading={citiesLoading}
+            />
           ))}
         </CardScroller>
       </Section>

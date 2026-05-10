@@ -5,8 +5,12 @@ import {
   ALL_US_CITIES,
   WORLDWIDE_CITIES,
 } from '../data/cities.js'
+import { useCityEvents } from '../lib/useCityEvents.js'
 
 export default function Cities() {
+  const { byCity, loading } = useCityEvents()
+  const countFor = (slug) => byCity[slug]?.length ?? 0
+
   return (
     <div className="flex flex-col">
       <section className="border-b border-gray-200 bg-white">
@@ -23,11 +27,16 @@ export default function Cities() {
 
       <Section
         title="Popular Cities in the United States"
-        subtitle="Top destinations with the most events this month"
+        subtitle="Top destinations for events on the platform"
       >
         <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 md:gap-5 lg:grid-cols-4">
           {POPULAR_US_CITIES.map((city) => (
-            <CityFeatureCard key={city.slug} {...city} />
+            <CityFeatureCard
+              key={city.slug}
+              {...city}
+              count={countFor(city.slug)}
+              loading={loading}
+            />
           ))}
         </div>
       </Section>
@@ -39,7 +48,13 @@ export default function Cities() {
       >
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5">
           {ALL_US_CITIES.map((city) => (
-            <CityListCard key={city.slug} name={city.name} slug={city.slug} />
+            <CityListCard
+              key={city.slug}
+              name={city.name}
+              slug={city.slug}
+              count={countFor(city.slug)}
+              loading={loading}
+            />
           ))}
         </div>
       </Section>
@@ -55,6 +70,8 @@ export default function Cities() {
               name={city.name}
               slug={city.slug}
               country={city.country}
+              count={countFor(city.slug)}
+              loading={loading}
             />
           ))}
         </div>
