@@ -3,6 +3,7 @@ import MainLayout from './layouts/MainLayout.jsx'
 import AdminLayout from './layouts/AdminLayout.jsx'
 import ProtectedRoute from './components/ProtectedRoute.jsx'
 import ErrorBoundary from './components/ErrorBoundary.jsx'
+import TawkChat from './components/TawkChat.jsx'
 import Home from './pages/Home.jsx'
 import EventDetails from './pages/EventDetails.jsx'
 import Login from './pages/Login.jsx'
@@ -28,76 +29,82 @@ import AdminOrders from './pages/admin/AdminOrders.jsx'
 
 export default function App() {
   return (
-    <Routes>
-      <Route element={<MainLayout />}>
-        <Route path="/" element={<Home />} />
+    <>
+      <Routes>
+        <Route element={<MainLayout />}>
+          <Route path="/" element={<Home />} />
 
-        <Route path="/sports" element={<Sports />} />
-        <Route path="/sports/:league" element={<SportsLeague />} />
-        <Route path="/concerts" element={<Concerts />} />
-        <Route path="/arts" element={<Arts />} />
-        <Route path="/family" element={<Family />} />
+          <Route path="/sports" element={<Sports />} />
+          <Route path="/sports/:league" element={<SportsLeague />} />
+          <Route path="/concerts" element={<Concerts />} />
+          <Route path="/arts" element={<Arts />} />
+          <Route path="/family" element={<Family />} />
 
-        <Route path="/cities" element={<Cities />} />
-        <Route path="/city/:name" element={<CityPage />} />
-        <Route path="/search" element={<Search />} />
+          <Route path="/cities" element={<Cities />} />
+          <Route path="/city/:name" element={<CityPage />} />
+          <Route path="/search" element={<Search />} />
 
-        <Route
-          path="/event/:id"
-          element={
-            <ErrorBoundary>
-              <EventDetails />
-            </ErrorBoundary>
-          }
-        />
-
-        <Route path="/login" element={<Login />} />
-        <Route path="/signup" element={<Signup />} />
-        <Route path="/verify-otp" element={<VerifyOtp />} />
-        <Route path="/forgot-password" element={<ForgotPassword />} />
-        <Route path="/reset-password" element={<ResetPassword />} />
-
-        <Route
-          path="/checkout"
-          element={
-            <ProtectedRoute>
+          <Route
+            path="/event/:id"
+            element={
               <ErrorBoundary>
-                <Checkout />
+                <EventDetails />
               </ErrorBoundary>
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/my-tickets"
-          element={
-            <ProtectedRoute>
-              <MyTickets />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/favorites"
-          element={
-            <ProtectedRoute>
-              <Favorites />
-            </ProtectedRoute>
-          }
-        />
+            }
+          />
 
-        <Route
-          path="/admin"
-          element={
-            <ProtectedRoute requireRole="admin">
-              <AdminLayout />
-            </ProtectedRoute>
-          }
-        >
-          <Route index element={<AdminOverview />} />
-          <Route path="events" element={<AdminEvents />} />
-          <Route path="users" element={<AdminUsers />} />
-          <Route path="orders" element={<AdminOrders />} />
+          <Route path="/login" element={<Login />} />
+          <Route path="/signup" element={<Signup />} />
+          <Route path="/verify-otp" element={<VerifyOtp />} />
+          <Route path="/forgot-password" element={<ForgotPassword />} />
+          <Route path="/reset-password" element={<ResetPassword />} />
+
+          <Route
+            path="/checkout"
+            element={
+              <ProtectedRoute>
+                <ErrorBoundary>
+                  <Checkout />
+                </ErrorBoundary>
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/my-tickets"
+            element={
+              <ProtectedRoute>
+                <MyTickets />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/favorites"
+            element={
+              <ProtectedRoute>
+                <Favorites />
+              </ProtectedRoute>
+            }
+          />
+
+          <Route
+            path="/admin"
+            element={
+              <ProtectedRoute requireRole="admin">
+                <AdminLayout />
+              </ProtectedRoute>
+            }
+          >
+            <Route index element={<AdminOverview />} />
+            <Route path="events" element={<AdminEvents />} />
+            <Route path="users" element={<AdminUsers />} />
+            <Route path="orders" element={<AdminOrders />} />
+          </Route>
         </Route>
-      </Route>
-    </Routes>
+      </Routes>
+
+      {/* Tawk.to live chat — mounted once at the app root, outside the
+          Routes so it persists across navigation without re-loading. */}
+      <TawkChat />
+    </>
   )
 }
