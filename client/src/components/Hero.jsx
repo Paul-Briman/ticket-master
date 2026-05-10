@@ -1,9 +1,31 @@
+import { useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import Button from './Button.jsx'
 
 const HERO_IMAGE =
   'https://library.sportingnews.com/styles/crop_style_16_9_desktop_webp/s3/2025-11/World-Cup-2026-umbrella-FTR-%281%29.jpg.webp?itok=XaOY3f1S'
 
+// Distance the navbar takes up so smooth-scroll lands the section
+// right under the sticky header rather than tucked behind it.
+const NAV_OFFSET = 96
+
+function smoothScrollToId(id) {
+  const el = typeof document !== 'undefined' ? document.getElementById(id) : null
+  if (!el) return
+  const top = el.getBoundingClientRect().top + window.scrollY - NAV_OFFSET
+  window.scrollTo({ top: Math.max(0, top), behavior: 'smooth' })
+}
+
 export default function Hero() {
+  const navigate = useNavigate()
+  const [query, setQuery] = useState('')
+
+  function handleSubmit(e) {
+    e.preventDefault()
+    const q = query.trim()
+    navigate(q ? `/search?q=${encodeURIComponent(q)}` : '/search')
+  }
+
   return (
     <section
       className="relative isolate w-full bg-cover bg-center bg-no-repeat"
@@ -25,11 +47,19 @@ export default function Hero() {
         </p>
 
         <form
-          onSubmit={(e) => e.preventDefault()}
+          onSubmit={handleSubmit}
+          role="search"
           className="mt-8 flex w-full max-w-xl items-center gap-2 rounded-lg bg-white p-1.5 shadow-lg"
         >
+          <label htmlFor="hero-search" className="sr-only">
+            Search events
+          </label>
           <input
-            type="text"
+            id="hero-search"
+            type="search"
+            inputMode="search"
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
             placeholder="Search teams, artists, venues..."
             className="flex-1 rounded-md border-0 bg-transparent px-3 py-2 text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-0"
           />
@@ -39,7 +69,13 @@ export default function Hero() {
         </form>
 
         <div className="mt-6">
-          <Button variant="secondary" size="lg" className="bg-white/95">
+          <Button
+            variant="secondary"
+            size="lg"
+            type="button"
+            className="bg-white/95"
+            onClick={() => smoothScrollToId('matches-section')}
+          >
             Browse Matches
           </Button>
         </div>

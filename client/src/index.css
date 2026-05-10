@@ -8,11 +8,27 @@ body,
   height: 100%;
 }
 
+html {
+  /* Smooth scroll for anchor links (e.g. Hero "Browse Matches" CTA),
+     plus keep iOS from auto-zooming inputs that use 16px font. */
+  scroll-behavior: smooth;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+}
+
 body {
   background-color: #ffffff;
   color: #111827;
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
   -webkit-font-smoothing: antialiased;
+  /* Prevent stray full-width elements from triggering horizontal
+     scroll on phones — the layout itself is fluid, but offscreen
+     overlays / tooltips occasionally overshoot the viewport. */
+  overflow-x: hidden;
 }
 
 @layer components {

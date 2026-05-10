@@ -32,6 +32,10 @@ export default function Home() {
         </Section>
       )}
 
+      {/* Anchor target for the Hero "Browse Matches" CTA. The
+          scroll-margin-top accounts for the sticky navbar height so
+          smooth-scroll lands the heading just under the header. */}
+      <div id="matches-section" className="scroll-mt-24 md:scroll-mt-28" />
       <LiveSportsSection
         title="Popular World Cup Matches"
         subtitle="Upcoming FIFA World Cup fixtures."

@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { Link, NavLink, useLocation } from 'react-router-dom'
+import { Link, NavLink, useLocation, useNavigate, useSearchParams } from 'react-router-dom'
 import { useAuth } from '../lib/auth.jsx'
 import UserMenu from './UserMenu.jsx'
 
@@ -16,7 +16,30 @@ const SCROLL_THRESHOLD = 60
 export default function Navbar() {
   const { user } = useAuth()
   const location = useLocation()
+  const navigate = useNavigate()
+  const [searchParams] = useSearchParams()
   const isHomepage = location.pathname === '/'
+  const isSearchPage = location.pathname === '/search'
+
+  // When the user is already on /search, the page itself owns the
+  // controlled search input. The navbar input mirrors the URL param so
+  // both stay in sync, and submitting the navbar form just nudges the
+  // URL — the Search page picks up the change reactively.
+  const [navQuery, setNavQuery] = useState(
+    isSearchPage ? searchParams.get('q') || '' : '',
+  )
+
+  useEffect(() => {
+    if (isSearchPage) setNavQuery(searchParams.get('q') || '')
+    else setNavQuery('')
+  }, [isSearchPage, searchParams])
+
+  function handleSearchSubmit(e) {
+    e.preventDefault()
+    const q = navQuery.trim()
+    const target = q ? `/search?q=${encodeURIComponent(q)}` : '/search'
+    navigate(target)
+  }
 
   const [scrolled, setScrolled] = useState(
     typeof window !== 'undefined' ? window.scrollY > SCROLL_THRESHOLD : false,
@@ -73,15 +96,26 @@ export default function Navbar() {
           </span>
         </Link>
 
-        <div className="hidden flex-1 justify-center md:flex">
+        <form
+          onSubmit={handleSearchSubmit}
+          role="search"
+          className="hidden flex-1 justify-center md:flex"
+        >
           <div className="relative w-full max-w-xl">
+            <label htmlFor="navbar-search-desktop" className="sr-only">
+              Search events
+            </label>
             <input
-              type="text"
+              id="navbar-search-desktop"
+              type="search"
+              inputMode="search"
+              value={navQuery}
+              onChange={(e) => setNavQuery(e.target.value)}
               placeholder="Search events, artists, teams, venues..."
               className={searchCls}
             />
           </div>
-        </div>
+        </form>
 
         <div className="ml-auto">
           {user ? (
@@ -135,15 +169,24 @@ export default function Navbar() {
         </div>
       </nav>
 
-      <div
+      <form
+        onSubmit={handleSearchSubmit}
+        role="search"
         className={`border-t ${subRowBorder} px-4 py-2 transition-colors duration-300 md:hidden`}
       >
+        <label htmlFor="navbar-search-mobile" className="sr-only">
+          Search events
+        </label>
         <input
-          type="text"
+          id="navbar-search-mobile"
+          type="search"
+          inputMode="search"
+          value={navQuery}
+          onChange={(e) => setNavQuery(e.target.value)}
           placeholder="Search events..."
           className={mobileSearchCls}
         />
-      </div>
+      </form>
     </header>
   )
 }

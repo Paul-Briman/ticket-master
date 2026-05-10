@@ -18,6 +18,7 @@ import Arts from './pages/Arts.jsx'
 import Family from './pages/Family.jsx'
 import Cities from './pages/Cities.jsx'
 import CityPage from './pages/CityPage.jsx'
+import Search from './pages/Search.jsx'
 import MyTickets from './pages/MyTickets.jsx'
 import Favorites from './pages/Favorites.jsx'
 import AdminOverview from './pages/admin/Overview.jsx'
@@ -39,6 +40,7 @@ export default function App() {
 
         <Route path="/cities" element={<Cities />} />
         <Route path="/city/:name" element={<CityPage />} />
+        <Route path="/search" element={<Search />} />
 
         <Route
           path="/event/:id"
