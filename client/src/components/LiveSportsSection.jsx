@@ -2,7 +2,6 @@ import Section from './Section.jsx'
 import EventCard from './EventCard.jsx'
 import CardScroller from './CardScroller.jsx'
 import { SkeletonCard } from './Skeleton.jsx'
-import { useSportsEvents } from '../lib/useSportsEvents.js'
 
 function EmptyState({ message }) {
   return (
@@ -13,17 +12,22 @@ function EmptyState({ message }) {
   )
 }
 
+/**
+ * Display a sports lane on Home or any landing page. Receives a
+ * pre-fetched events array — never fetches its own data — so this
+ * lane and the league page it links to are always derived from the
+ * same single-source-of-truth cache (useAllSportsEvents).
+ */
 export default function LiveSportsSection({
   title,
   subtitle,
   seeAllHref,
   background,
-  league,
-  size = 12,
+  events = [],
+  loading = false,
+  displaySize = 12,
 }) {
-  const { events, loading } = useSportsEvents({ league, size })
-
-  const cards = events.map((e) => ({
+  const cards = events.slice(0, displaySize).map((e) => ({
     ...e,
     location: e.venue ? `${e.venue}, ${e.city}` : e.city,
   }))

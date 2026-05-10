@@ -8,7 +8,7 @@ import EventCard from '../components/EventCard.jsx'
 import CardScroller from '../components/CardScroller.jsx'
 import Section from '../components/Section.jsx'
 import { SkeletonCard } from '../components/Skeleton.jsx'
-import { useSportsEvents } from '../lib/useSportsEvents.js'
+import { useAllSportsEvents } from '../lib/useAllSportsEvents.js'
 import { filterEvents } from '../lib/search.js'
 
 export default function SportsLeague() {
@@ -16,10 +16,10 @@ export default function SportsLeague() {
   const league = findLeague(leagueKey)
   const [query, setQuery] = useState('')
 
-  const { events, loading } = useSportsEvents(
-    { league: league?.key, size: 120 },
-    { enabled: !!league },
-  )
+  // Read from the single source of truth so this page's events array
+  // and the LeagueCard count for the same league always agree.
+  const { byLeague, loading } = useAllSportsEvents()
+  const events = league ? byLeague[league.key] || [] : []
 
   const decorated = useMemo(
     () =>

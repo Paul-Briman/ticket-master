@@ -3,8 +3,17 @@ import { api } from './api.js'
 
 // In-memory caches so re-mounting doesn't re-hit the network. Backend
 // already does its own SWR cache via Vercel KV.
+//
+// Entries carry an `expiresAt` so a transient empty (e.g. a brief
+// upstream rate-limit) can't lock the tab onto stale data forever —
+// after the TTL the next consumer triggers a refetch.
 const memoryCache = new Map()
 const inflight = new Map()
+const TTL_MS = 5 * 60 * 1000 // 5 minutes
+
+function isFresh(entry) {
+  return !!entry && entry.expiresAt > Date.now()
+}
 
 function paramsKey(params) {
   const entries = Object.entries(params || {})
@@ -18,6 +27,16 @@ function paramsKey(params) {
  * curated mock fallback, no merging. If the live provider is empty
  * or down, the consumer should render an empty state.
  */
+/**
+ * Drop every cached sports-events entry. Admin override saves call
+ * this so the next render of any sports lane picks up the new data
+ * instead of waiting out the TTL window with a stale array.
+ */
+export function invalidateSportsEventsCache() {
+  memoryCache.clear()
+  inflight.clear()
+}
+
 export function useSportsEvents(params, { enabled = true } = {}) {
   const [events, setEvents] = useState([])
   const [loading, setLoading] = useState(enabled)
@@ -34,8 +53,8 @@ export function useSportsEvents(params, { enabled = true } = {}) {
 
     let cancelled = false
 
-    if (memoryCache.has(key)) {
-      const cached = memoryCache.get(key)
+    const cached = memoryCache.get(key)
+    if (isFresh(cached)) {
       setEvents(cached.events)
       setStatus(cached.status)
       setLoading(false)
@@ -61,7 +80,11 @@ export function useSportsEvents(params, { enabled = true } = {}) {
         if (cancelled) return
         const evs = Array.isArray(data?.events) ? data.events : []
         const st = data?.status || 'unknown'
-        memoryCache.set(key, { events: evs, status: st })
+        memoryCache.set(key, {
+          events: evs,
+          status: st,
+          expiresAt: Date.now() + TTL_MS,
+        })
         setEvents(evs)
         setStatus(st)
         if (data?.error) setError(data.error)

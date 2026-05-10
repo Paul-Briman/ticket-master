@@ -10,11 +10,20 @@ import { POPULAR_US_CITIES } from '../data/cities.js'
 import { SPORTS_LEAGUES } from '../data/leagues.js'
 import { useRecentlyViewed } from '../lib/recentlyViewed.js'
 import { useCityEvents } from '../lib/useCityEvents.js'
+import { useAllSportsEvents } from '../lib/useAllSportsEvents.js'
 
 export default function Home() {
   const { recent } = useRecentlyViewed()
   const recentEvents = recent
   const { byCity, loading: citiesLoading } = useCityEvents()
+
+  // Single source of truth for every sports section on this page —
+  // the "Popular World Cup Matches" lane, the league cards' counts,
+  // and (transitively) the league pages all read from the same
+  // per-league cache so a card count and the page it links to can
+  // never disagree.
+  const sportsByLeague = useAllSportsEvents()
+  const wcEvents = sportsByLeague.byLeague['world-cup'] || []
 
   return (
     <div className="flex flex-col">
@@ -42,8 +51,9 @@ export default function Home() {
         title="Popular World Cup Matches"
         subtitle="Upcoming FIFA World Cup fixtures."
         seeAllHref="/sports/world-cup"
-        league="world-cup"
-        size={12}
+        events={wcEvents}
+        loading={sportsByLeague.loading}
+        displaySize={12}
       />
 
       <Section
@@ -58,6 +68,8 @@ export default function Home() {
               key={league.key}
               league={league}
               lock={500 + idx}
+              count={sportsByLeague.counts[league.key]}
+              loading={sportsByLeague.loading}
             />
           ))}
         </div>

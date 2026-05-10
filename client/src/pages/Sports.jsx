@@ -7,12 +7,15 @@ import LeagueCard from '../components/sports/LeagueCard.jsx'
 import EventGrid from '../components/EventGrid.jsx'
 import Section from '../components/Section.jsx'
 import { SkeletonCard } from '../components/Skeleton.jsx'
-import { useSportsEvents } from '../lib/useSportsEvents.js'
+import { useAllSportsEvents } from '../lib/useAllSportsEvents.js'
 import { filterEvents } from '../lib/search.js'
 
 export default function Sports() {
   const config = CATEGORIES.sports
-  const { events, loading } = useSportsEvents({ size: 50 })
+  // Single source of truth — same per-league cache the LeagueCard
+  // counts and the SportsLeague pages read from.
+  const { allEvents, counts, loading } = useAllSportsEvents()
+  const events = allEvents
   const [query, setQuery] = useState('')
 
   const decorated = useMemo(
@@ -70,6 +73,8 @@ export default function Sports() {
               key={league.key}
               league={league}
               lock={400 + idx}
+              count={counts[league.key]}
+              loading={loading}
             />
           ))}
         </div>

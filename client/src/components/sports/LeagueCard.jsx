@@ -1,10 +1,14 @@
 import { Link } from 'react-router-dom'
 import { leagueImg } from '../../lib/image.js'
-import { useLeagueCounts } from '../../lib/useLeagueCounts.js'
 
-export default function LeagueCard({ league, lock = 1 }) {
-  const { counts, loading } = useLeagueCounts()
-  const eventCount = counts[league.key]
+/**
+ * Display a league hero card. The count comes from the parent (which
+ * pulls it from useAllSportsEvents) — this is intentional so the
+ * number on the card and the events on /sports/:league are derived
+ * from the SAME fetched dataset. No separate /counts endpoint, no
+ * second cache, no estimator.
+ */
+export default function LeagueCard({ league, lock = 1, count, loading = false }) {
   const image = leagueImg(league.key, { w: 600, h: 450, lock })
 
   // The backend caps each league at 30 events, so when we receive 30
@@ -12,16 +16,14 @@ export default function LeagueCard({ league, lock = 1 }) {
   const CAP = 30
 
   let countLabel
-  if (loading && eventCount === undefined) {
-    countLabel = 'Loading...'
-  } else if (eventCount === undefined || eventCount === null) {
-    countLabel = 'View league'
-  } else if (eventCount === 0) {
-    countLabel = 'No upcoming events'
-  } else if (eventCount >= CAP) {
+  if (count === undefined || count === null) {
+    countLabel = loading ? 'Loading...' : 'View league'
+  } else if (count === 0) {
+    countLabel = loading ? 'Loading...' : 'No upcoming events'
+  } else if (count >= CAP) {
     countLabel = `${CAP}+ upcoming events`
   } else {
-    countLabel = `${eventCount} upcoming event${eventCount === 1 ? '' : 's'}`
+    countLabel = `${count} upcoming event${count === 1 ? '' : 's'}`
   }
 
   return (

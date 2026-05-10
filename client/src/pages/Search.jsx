@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
 import EventGrid from '../components/EventGrid.jsx'
 import { SkeletonCard } from '../components/Skeleton.jsx'
-import { useSportsEvents } from '../lib/useSportsEvents.js'
+import { useAllSportsEvents } from '../lib/useAllSportsEvents.js'
 import { useEventList } from '../lib/useEventList.js'
 import { filterEvents } from '../lib/search.js'
 
@@ -50,17 +50,17 @@ export default function Search() {
     return () => clearTimeout(handle)
   }, [query, category, setSearchParams])
 
-  // Pull from every category in parallel. The hooks are always called
-  // (no conditional) but we cap size and let the cache absorb repeated
-  // visits cheaply.
-  const sports = useSportsEvents({ size: 50 })
+  // Pull from every category in parallel. The sports source is the
+  // unified per-league cache used by Home/Sports/SportsLeague — same
+  // events in search results as everywhere else on the site.
+  const sports = useAllSportsEvents()
   const concerts = useEventList('concerts', { size: 50 })
   const arts = useEventList('arts', { size: 50 })
   const family = useEventList('family', { size: 50 })
 
   const allEvents = useMemo(() => {
     const buckets = []
-    if (category === 'all' || category === 'sports') buckets.push(sports.events)
+    if (category === 'all' || category === 'sports') buckets.push(sports.allEvents)
     if (category === 'all' || category === 'concerts') buckets.push(concerts.events)
     if (category === 'all' || category === 'arts') buckets.push(arts.events)
     if (category === 'all' || category === 'family') buckets.push(family.events)
@@ -76,7 +76,7 @@ export default function Search() {
     return out
   }, [
     category,
-    sports.events,
+    sports.allEvents,
     concerts.events,
     arts.events,
     family.events,

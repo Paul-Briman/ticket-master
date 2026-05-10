@@ -3,6 +3,17 @@ import EventOverrideForm from '../../components/admin/EventOverrideForm.jsx'
 import { api } from '../../lib/api.js'
 import { SkeletonRow } from '../../components/Skeleton.jsx'
 import { invalidateEventCache } from '../../lib/useEvent.js'
+import { invalidateSportsEventsCache } from '../../lib/useSportsEvents.js'
+import { invalidateEventListCache } from '../../lib/useEventList.js'
+
+// Bust EVERY in-memory list cache so an admin previewing the public
+// site immediately sees the override on home / category / search /
+// city pages — not after the 5-minute TTL window.
+function invalidateAllPublicCaches(eventId) {
+  invalidateEventCache(eventId)
+  invalidateSportsEventsCache()
+  invalidateEventListCache()
+}
 
 const CATEGORY_LABELS = {
   sports: 'Sports',
@@ -66,9 +77,7 @@ export default function AdminEvents() {
 
   async function handleSave(id, patch) {
     await api.adminEventOverride(id, patch)
-    // Bust the client-side detail cache so a preview reflects fresh
-    // pricing/metadata immediately on the next visit.
-    invalidateEventCache(id)
+    invalidateAllPublicCaches(id)
     await load()
     setEditing(null)
   }
@@ -76,7 +85,7 @@ export default function AdminEvents() {
   async function handleClearOverride(id) {
     if (!window.confirm('Revert this event to its live provider data?')) return
     await api.adminClearEventOverride(id)
-    invalidateEventCache(id)
+    invalidateAllPublicCaches(id)
     await load()
   }
 

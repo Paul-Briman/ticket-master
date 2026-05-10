@@ -3,6 +3,11 @@ import { api } from './api.js'
 
 const memoryCache = new Map()
 const inflight = new Map()
+const TTL_MS = 5 * 60 * 1000 // 5 minutes — same as useSportsEvents
+
+function isFresh(entry) {
+  return !!entry && entry.expiresAt > Date.now()
+}
 
 const FETCHERS = {
   concerts: (p) => api.concerts(p),
@@ -16,6 +21,16 @@ function paramsKey(category, params) {
     .sort(([a], [b]) => a.localeCompare(b))
   const tail = entries.map(([k, v]) => `${k}=${v}`).join('&') || '__default__'
   return `${category}|${tail}`
+}
+
+/**
+ * Drop every cached entry. Used by admin override saves so the next
+ * mount of any concert / arts / family list refetches against the
+ * latest backend state.
+ */
+export function invalidateEventListCache() {
+  memoryCache.clear()
+  inflight.clear()
 }
 
 /**
@@ -47,8 +62,8 @@ export function useEventList(category, params = {}, { enabled = true } = {}) {
 
     let cancelled = false
 
-    if (memoryCache.has(key)) {
-      const cached = memoryCache.get(key)
+    const cached = memoryCache.get(key)
+    if (isFresh(cached)) {
       setEvents(cached.events)
       setStatus(cached.status)
       setLoading(false)
@@ -74,7 +89,11 @@ export function useEventList(category, params = {}, { enabled = true } = {}) {
         if (cancelled) return
         const evs = Array.isArray(data?.events) ? data.events : []
         const st = data?.status || 'unknown'
-        memoryCache.set(key, { events: evs, status: st })
+        memoryCache.set(key, {
+          events: evs,
+          status: st,
+          expiresAt: Date.now() + TTL_MS,
+        })
         setEvents(evs)
         setStatus(st)
         if (data?.error) setError(data.error)
