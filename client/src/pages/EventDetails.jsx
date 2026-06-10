@@ -16,6 +16,7 @@ import { recordRecentView } from '../lib/recentlyViewed.js'
 import { parseEventDate } from '../lib/dateParse.js'
 import { useSportsEvents } from '../lib/useSportsEvents.js'
 import { useEvent } from '../lib/useEvent.js'
+import { isEventExpired, isEventVisible } from '../lib/eventExpiry.js'
 
 export default function EventDetails() {
   const { id } = useParams()
@@ -28,7 +29,9 @@ export default function EventDetails() {
 
   useEffect(() => {
     window.scrollTo({ top: 0, behavior: 'auto' })
-    if (event?.id) recordRecentView(event)
+    // Only stash upcoming events into recently-viewed. An expired
+    // event shouldn't keep advertising itself on the homepage lane.
+    if (event?.id && !isEventExpired(event)) recordRecentView(event)
   }, [id, event?.id])
 
   const targetDate = useMemo(() => parseEventDate(event?.date), [event?.date])
@@ -80,18 +83,21 @@ export default function EventDetails() {
     )
   }
 
+  const expired = isEventExpired(event)
+
   const selectedOption = options.find((o) => o.key === selectedKey) || null
   const subtotal = (selectedOption?.price || 0) * quantity
   const total = subtotal + subtotal * SERVICE_FEE_RATE
 
-  // Recommendations:
-  // - Sports events → live league fixtures (already fetched above)
-  // - Curated categories → filter the curated catalog
-  const related = isSportsEvent
-    ? liveRelated.filter((e) => e.id !== event.id).slice(0, 6)
+  // Recommendations — and strip any candidate that's already expired.
+  const related = (isSportsEvent
+    ? liveRelated.filter((e) => e.id !== event.id)
     : EVENTS.filter(
         (e) => e.category === event.category && e.id !== event.id,
-      ).slice(0, 6)
+      )
+  )
+    .filter(isEventVisible)
+    .slice(0, 6)
 
   return (
     <div className="flex flex-col pb-24 md:pb-0">
@@ -101,20 +107,55 @@ export default function EventDetails() {
         <div className="mx-auto max-w-7xl px-4 py-8 md:px-6 md:py-12">
           <div className="grid grid-cols-1 gap-8 lg:grid-cols-[1fr_380px]">
             <div className="flex flex-col gap-6">
-              {targetDate && (
-                <article className="rounded-lg border border-gray-200 bg-gradient-to-br from-blue-600 to-blue-800 p-5 text-white md:p-6">
-                  <div className="flex flex-wrap items-center justify-between gap-4">
-                    <div>
-                      <p className="text-xs font-semibold uppercase tracking-wider text-white/80">
-                        Event begins in
-                      </p>
-                      <h3 className="mt-1 text-base font-bold md:text-lg">
-                        {event.title}
-                      </h3>
-                    </div>
-                    <EventCountdown targetDate={targetDate} />
+              {expired ? (
+                <article className="rounded-lg border border-amber-200 bg-amber-50 p-5 md:p-6">
+                  <p className="text-xs font-semibold uppercase tracking-wider text-amber-700">
+                    Event has ended
+                  </p>
+                  <h3 className="mt-1 text-base font-bold text-amber-900 md:text-lg">
+                    Ticket sales are closed for this event.
+                  </h3>
+                  <p className="mt-2 text-sm text-amber-800">
+                    Browse upcoming events instead — here are similar shows
+                    you may like below.
+                  </p>
+                  <div className="mt-4 flex flex-wrap gap-2">
+                    <Link
+                      to={
+                        event.category === 'sports'
+                          ? event.league
+                            ? `/sports/${event.league}`
+                            : '/sports'
+                          : `/${event.category}`
+                      }
+                    >
+                      <Button variant="primary" size="md">
+                        Browse upcoming {event.category}
+                      </Button>
+                    </Link>
+                    <Link to="/">
+                      <Button variant="secondary" size="md">
+                        Back to home
+                      </Button>
+                    </Link>
                   </div>
                 </article>
+              ) : (
+                targetDate && (
+                  <article className="rounded-lg border border-gray-200 bg-gradient-to-br from-blue-600 to-blue-800 p-5 text-white md:p-6">
+                    <div className="flex flex-wrap items-center justify-between gap-4">
+                      <div>
+                        <p className="text-xs font-semibold uppercase tracking-wider text-white/80">
+                          Event begins in
+                        </p>
+                        <h3 className="mt-1 text-base font-bold md:text-lg">
+                          {event.title}
+                        </h3>
+                      </div>
+                      <EventCountdown targetDate={targetDate} />
+                    </div>
+                  </article>
+                )
               )}
 
               <article className="rounded-lg border border-gray-200 bg-white p-5 md:p-6">
@@ -146,21 +187,38 @@ export default function EventDetails() {
                 </div>
               </article>
 
-              <SeatSelector
-                event={event}
-                options={options}
-                selectedKey={selectedKey}
-                onSelect={setSelectedKey}
-              />
+              {!expired && (
+                <SeatSelector
+                  event={event}
+                  options={options}
+                  selectedKey={selectedKey}
+                  onSelect={setSelectedKey}
+                />
+              )}
             </div>
 
             <div className="lg:sticky lg:top-32 lg:self-start">
-              <TicketSummary
-                event={event}
-                option={selectedOption}
-                quantity={quantity}
-                onQuantityChange={setQuantity}
-              />
+              {expired ? (
+                <aside className="rounded-lg border border-gray-200 bg-white p-5 shadow-sm md:p-6">
+                  <p className="text-xs font-semibold uppercase tracking-wider text-gray-500">
+                    Tickets unavailable
+                  </p>
+                  <p className="mt-1 text-base font-bold text-gray-900">
+                    This event has ended.
+                  </p>
+                  <p className="mt-3 text-sm text-gray-600">
+                    Sales close the moment the event begins. Check out the
+                    upcoming events below — we'll have something you'll love.
+                  </p>
+                </aside>
+              ) : (
+                <TicketSummary
+                  event={event}
+                  option={selectedOption}
+                  quantity={quantity}
+                  onQuantityChange={setQuantity}
+                />
+              )}
             </div>
           </div>
         </div>
@@ -182,15 +240,17 @@ export default function EventDetails() {
         </Section>
       )}
 
-      <MobileStickyCTA
-        total={total}
-        disabled={!selectedOption}
-        checkoutState={
-          selectedOption
-            ? { event, eventId: event.id, optionKey: selectedOption.key, quantity }
-            : null
-        }
-      />
+      {!expired && (
+        <MobileStickyCTA
+          total={total}
+          disabled={!selectedOption}
+          checkoutState={
+            selectedOption
+              ? { event, eventId: event.id, optionKey: selectedOption.key, quantity }
+              : null
+          }
+        />
+      )}
     </div>
   )
 }

@@ -39,12 +39,14 @@ function formatPrice(n) {
 
 export default function AdminEvents() {
   const [events, setEvents] = useState([])
+  const [counts, setCounts] = useState({ upcoming: 0, expired: 0 })
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
   const [editing, setEditing] = useState(null)
   const [creating, setCreating] = useState(false)
   const [filter, setFilter] = useState('all')
   const [search, setSearch] = useState('')
+  const [statusTab, setStatusTab] = useState('upcoming') // 'upcoming' | 'expired' | 'all'
 
   async function load() {
     setLoading(true)
@@ -52,6 +54,10 @@ export default function AdminEvents() {
     try {
       const res = await api.adminEvents()
       setEvents(Array.isArray(res?.events) ? res.events : [])
+      setCounts({
+        upcoming: res?.upcomingCount ?? 0,
+        expired: res?.expiredCount ?? 0,
+      })
     } catch (err) {
       setError(err.message || 'Failed to load events')
     } finally {
@@ -65,6 +71,8 @@ export default function AdminEvents() {
 
   const filtered = useMemo(() => {
     let list = events
+    if (statusTab === 'upcoming') list = list.filter((e) => !e.expired)
+    else if (statusTab === 'expired') list = list.filter((e) => e.expired)
     if (filter !== 'all') list = list.filter((e) => e.category === filter)
     if (search) {
       const q = search.toLowerCase()
@@ -76,7 +84,7 @@ export default function AdminEvents() {
       )
     }
     return list
-  }, [events, filter, search])
+  }, [events, filter, search, statusTab])
 
   async function handleSave(id, patch) {
     await api.adminEventOverride(id, patch)
@@ -129,6 +137,30 @@ export default function AdminEvents() {
           + Create event
         </Button>
       </header>
+
+      <div className="flex flex-wrap items-center gap-2 border-b border-gray-200">
+        {[
+          { key: 'upcoming', label: 'Upcoming', count: counts.upcoming },
+          { key: 'expired', label: 'Expired', count: counts.expired },
+          { key: 'all', label: 'All', count: counts.upcoming + counts.expired },
+        ].map((tab) => (
+          <button
+            key={tab.key}
+            type="button"
+            onClick={() => setStatusTab(tab.key)}
+            className={`-mb-px border-b-2 px-3 py-2 text-sm font-medium transition-colors ${
+              statusTab === tab.key
+                ? 'border-brand text-brand'
+                : 'border-transparent text-gray-500 hover:text-gray-800'
+            }`}
+          >
+            {tab.label}
+            <span className="ml-1.5 rounded-full bg-gray-100 px-2 py-0.5 text-[10px] font-semibold text-gray-600">
+              {tab.count}
+            </span>
+          </button>
+        ))}
+      </div>
 
       <div className="flex flex-wrap items-center gap-2">
         <input
@@ -235,6 +267,11 @@ export default function AdminEvents() {
                           <span className="text-xs text-gray-600">
                             {event.provider || '—'}
                           </span>
+                          {event.expired && (
+                            <span className="inline-block rounded-full bg-amber-50 px-2 py-0.5 text-[10px] font-semibold text-amber-700">
+                              expired
+                            </span>
+                          )}
                           {event.adminCreated && (
                             <span className="inline-block rounded-full bg-emerald-50 px-2 py-0.5 text-[10px] font-semibold text-emerald-700">
                               admin created

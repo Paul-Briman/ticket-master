@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from 'react'
+import { isEventVisible } from './eventExpiry.js'
 
 const KEY = 'tm_recently_viewed'
 const MAX = 12
@@ -7,6 +8,7 @@ const STORED_FIELDS = [
   'id',
   'title',
   'date',
+  'utcDate',
   'image',
   'venue',
   'city',
@@ -37,7 +39,11 @@ function read() {
     const raw = JSON.parse(localStorage.getItem(KEY) || '[]')
     if (!Array.isArray(raw)) return []
     // Drop legacy id-only entries — we don't fabricate metadata.
-    return raw.filter((e) => e && typeof e === 'object' && e.id)
+    // Also strip events whose start time has passed so the homepage
+    // lane never advertises something the user can't actually buy.
+    return raw
+      .filter((e) => e && typeof e === 'object' && e.id)
+      .filter((e) => isEventVisible(e))
   } catch {
     return []
   }
