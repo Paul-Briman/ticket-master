@@ -79,4 +79,5 @@ export function useAdminStore() {
 export const ORDER_STATUS = {
   PENDING: 'Pending Payment',
   PAID: 'Paid',
+  REJECTED: 'Rejected',
 }

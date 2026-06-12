@@ -277,9 +277,18 @@ function PendingScreen({ order, event }) {
               </Button>
             </Link>
             <Link to={`/event/${event.id}`}>
-              <Button className="w-full sm:w-auto">View event</Button>
+              <Button variant="secondary" className="w-full sm:w-auto">
+                View event
+              </Button>
+            </Link>
+            <Link to="/my-tickets">
+              <Button className="w-full sm:w-auto">View my tickets</Button>
             </Link>
           </div>
+          <p className="mt-3 text-center text-xs text-gray-500 sm:text-right">
+            Your order is already in <strong>My Tickets</strong> as <em>Pending
+            Verification</em> — you can track confirmation status there.
+          </p>
         </div>
       </div>
     </div>

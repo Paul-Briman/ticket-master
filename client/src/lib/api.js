@@ -77,6 +77,11 @@ export const api = {
   adminOrders: () => request('/api/admin-orders'),
   confirmPayment: (orderId) =>
     request('/api/confirm-payment', { method: 'POST', body: { orderId } }),
+  rejectPayment: (orderId, reason) =>
+    request('/api/reject-payment', {
+      method: 'POST',
+      body: { orderId, reason: reason || '' },
+    }),
 
   adminEvents: () => request('/api/admin/events'),
   adminEventOverride: (id, patch) =>
