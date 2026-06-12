@@ -62,8 +62,9 @@ Set these env vars in the Vercel dashboard:
 
 - `JWT_SECRET` — long random string
 - `RESEND_API_KEY` — your Resend key
-- `EMAIL_FROM` — `ticketmaster <onboarding@resend.dev>` (default)
-- `APP_URL` — your production URL
+- `EMAIL_FROM` — production sender, e.g. `Ticketsmasterr <noreply@ticketsmasterr.com>`. The domain MUST be Resend-verified (Resend → Domains → Verified) or sends will 403.
+- `SUPPORT_EMAIL` — optional. When set, adds a `Reply-To` header on every automated email so customer replies reach a monitored inbox. e.g. `support@ticketsmasterr.com`.
+- `APP_URL` — your production URL, e.g. `https://ticketsmasterr.com`. Used in verification + reset links inside email templates.
 - `ADMIN_EMAIL` / `ADMIN_PASSWORD` — seeded admin credentials
 
 ## API surface
