@@ -77,22 +77,57 @@ export default function AppleGiftCardPayment({
         </p>
       </header>
 
-      <ol className="space-y-2.5 rounded-lg border border-blue-100 bg-blue-50/40 p-4 text-sm text-gray-800">
-        <li className="flex gap-2">
-          <span className="font-semibold text-brand">1.</span>
-          Buy an Apple Gift Card from any retailer with a face value of at
-          least <strong>{formatTotal(total)}</strong>. Physical or digital both work.
+      {/* Three-step instructions with a comfortable vertical rhythm.
+          Each step is a 2-column flex row: avatar circle on the left,
+          stack of (eyebrow / title / body / amount) on the right. The
+          amount in Step 1 lives in its own bordered block so it never
+          inline-wraps and remains visually anchored. */}
+      <ol className="rounded-xl border border-blue-100 bg-blue-50/40 p-5 md:p-6">
+        <li className="flex gap-4">
+          <StepBadge>1</StepBadge>
+          <div className="min-w-0 flex-1 space-y-2 pb-7 md:pb-8">
+            <StepEyebrow>Step 1</StepEyebrow>
+            <StepTitle>Purchase an Apple Gift Card</StepTitle>
+            <StepBody>
+              Buy an Apple Gift Card from any retailer with a face value of
+              at least:
+            </StepBody>
+            <AmountBlock total={total} />
+            <StepBody muted>
+              Physical and digital gift cards are both accepted.
+            </StepBody>
+          </div>
         </li>
-        <li className="flex gap-2">
-          <span className="font-semibold text-brand">2.</span>
-          Take a clear, well-lit photo of the <strong>front</strong> of the
-          card and another of the <strong>back</strong>. Make sure the gift
-          card number and PIN are fully visible — that's what we verify.
+
+        <li className="flex gap-4 border-t border-blue-100/70 pt-7 md:pt-8">
+          <StepBadge>2</StepBadge>
+          <div className="min-w-0 flex-1 space-y-2 pb-7 md:pb-8">
+            <StepEyebrow>Step 2</StepEyebrow>
+            <StepTitle>Take clear photos</StepTitle>
+            <StepBody>
+              Take a clear, well-lit photo of the front of the card and
+              another of the back.
+            </StepBody>
+            <StepBody muted>
+              Make sure the gift card number and PIN are fully visible — these
+              are required for verification.
+            </StepBody>
+          </div>
         </li>
-        <li className="flex gap-2">
-          <span className="font-semibold text-brand">3.</span>
-          Upload both photos below and submit your order. Tickets will be
-          confirmed after we verify the card balance.
+
+        <li className="flex gap-4 border-t border-blue-100/70 pt-7 md:pt-8">
+          <StepBadge>3</StepBadge>
+          <div className="min-w-0 flex-1 space-y-2">
+            <StepEyebrow>Step 3</StepEyebrow>
+            <StepTitle>Upload and submit</StepTitle>
+            <StepBody>
+              Upload both photos below and submit your order.
+            </StepBody>
+            <StepBody muted>
+              Your tickets will be issued after the gift card balance has been
+              verified.
+            </StepBody>
+          </div>
         </li>
       </ol>
 
@@ -139,9 +174,62 @@ export default function AppleGiftCardPayment({
   )
 }
 
-function formatTotal(total) {
-  if (!Number.isFinite(total) || total <= 0) return 'your order total'
-  return `$${total.toFixed(2)}`
+// ---- Step-row primitives ---------------------------------------
+// Single-purpose sub-components so the markup above stays readable
+// and any future style tweak only touches one place.
+
+function StepBadge({ children }) {
+  return (
+    <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-brand text-base font-bold leading-none text-white shadow-sm md:h-11 md:w-11 md:text-lg">
+      {children}
+    </div>
+  )
+}
+
+function StepEyebrow({ children }) {
+  return (
+    <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-brand">
+      {children}
+    </p>
+  )
+}
+
+function StepTitle({ children }) {
+  return (
+    <h3 className="text-base font-bold leading-snug text-gray-900 md:text-lg">
+      {children}
+    </h3>
+  )
+}
+
+function StepBody({ children, muted = false }) {
+  return (
+    <p
+      className={`text-sm leading-relaxed md:text-[15px] md:leading-relaxed ${
+        muted ? 'text-gray-500' : 'text-gray-700'
+      }`}
+    >
+      {children}
+    </p>
+  )
+}
+
+// Highlighted amount card — own block so it never inline-wraps in the
+// middle of the body copy. If the order total isn't a real number yet
+// (during initial seed), we fall back to a softer phrase rather than
+// flashing "$0.00".
+function AmountBlock({ total }) {
+  const isReal = Number.isFinite(total) && total > 0
+  return (
+    <div className="my-1 inline-flex flex-col rounded-xl border-2 border-brand/30 bg-white px-5 py-3 shadow-sm">
+      <span className="text-[10px] font-semibold uppercase tracking-widest text-brand/70">
+        Card amount
+      </span>
+      <span className="mt-0.5 whitespace-nowrap text-2xl font-bold tabular-nums tracking-tight text-brand md:text-3xl">
+        {isReal ? `$${total.toFixed(2)}` : 'Your order total'}
+      </span>
+    </div>
+  )
 }
 
 function UploadSlot({ label, hint, image, onFile, onClear }) {
