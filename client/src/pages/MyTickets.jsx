@@ -98,6 +98,10 @@ export default function MyTickets() {
                 ))}
               </Section>
             )}
+            {/* Note: PendingCard already distinguishes the pill text
+                and body copy by ticket.paymentMethod below — no second
+                section needed; both crypto and gift-card pending orders
+                share the same UI slot with method-specific labels. */}
 
             {confirmed.length > 0 && (
               <Section
@@ -239,6 +243,13 @@ function ConfirmedCard({ ticket, onView }) {
 }
 
 function PendingCard({ ticket }) {
+  const isGiftCard = ticket.paymentMethod === 'apple-gift-card'
+  const pillText = isGiftCard
+    ? '⏳ Pending Gift Card Verification'
+    : '⏳ Pending Verification'
+  const bodyText = isGiftCard
+    ? 'Your payment proof has been received and is awaiting review. As soon as we verify the Apple Gift Card balance, your mobile ticket will appear here.'
+    : "We have received your payment submission. Your ticket will be issued after payment confirmation. You'll be able to view your mobile ticket here as soon as it's confirmed."
   return (
     <li>
       <article className="overflow-hidden rounded-lg border border-amber-200 bg-amber-50/40 shadow-sm">
@@ -255,7 +266,7 @@ function PendingCard({ ticket }) {
             <div className="min-w-0 flex-1 p-5">
               <div className="flex flex-wrap items-center gap-2">
                 <span className="rounded-full border border-amber-200 bg-amber-100 px-2 py-0.5 text-xs font-semibold text-amber-800">
-                  ⏳ Pending Verification
+                  {pillText}
                 </span>
                 <span className="font-mono text-[11px] text-gray-400">
                   {ticket.id}
@@ -278,11 +289,7 @@ function PendingCard({ ticket }) {
                 <Field label="Quantity" value={`× ${ticket.quantity}`} />
               </dl>
 
-              <p className="mt-4 text-sm text-amber-900">
-                We have received your payment submission. Your ticket will be
-                issued after payment confirmation. You'll be able to view your
-                mobile ticket here as soon as it's confirmed.
-              </p>
+              <p className="mt-4 text-sm text-amber-900">{bodyText}</p>
             </div>
           </div>
 

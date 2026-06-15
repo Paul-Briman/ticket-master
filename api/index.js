@@ -12,7 +12,11 @@ import eventsRouter from '../lib/routes/events.js'
 const app = express()
 
 app.disable('x-powered-by')
-app.use(express.json({ limit: '256kb' }))
+// 2 MB is enough for two ~700 KB base64-encoded gift-card photos
+// (front + back) plus the rest of the order body. The client-side
+// imageCompress util keeps each photo well under 500 KB before
+// upload, so this ceiling is the safety margin.
+app.use(express.json({ limit: '2mb' }))
 
 app.get('/api', (req, res) => {
   res.json({

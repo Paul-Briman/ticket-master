@@ -4,10 +4,24 @@ import Button from '../components/Button.jsx'
 import Input from '../components/Input.jsx'
 import OrderSummary from '../components/OrderSummary.jsx'
 import CryptoPayment from '../components/CryptoPayment.jsx'
+import AppleGiftCardPayment from '../components/AppleGiftCardPayment.jsx'
 import { getSeatOptions, SERVICE_FEE_RATE, formatPrice } from '../lib/price.js'
 import { api } from '../lib/api.js'
 import { useAuth } from '../lib/auth.jsx'
 import { useEvent } from '../lib/useEvent.js'
+
+const PAYMENT_METHODS = [
+  {
+    key: 'crypto',
+    label: 'Cryptocurrency',
+    sublabel: 'BTC · ETH · USDT',
+  },
+  {
+    key: 'apple-gift-card',
+    label: 'Apple Gift Card',
+    sublabel: 'Upload front + back',
+  },
+]
 
 export default function Checkout() {
   const location = useLocation()
@@ -42,10 +56,22 @@ export default function Checkout() {
   const [email, setEmail] = useState(user?.email || '')
   const [status, setStatus] = useState('idle') // idle | submitting | pending
   const [pendingOrder, setPendingOrder] = useState(null)
-
-  const canSubmit = name.trim() && email.trim() && status === 'idle'
+  const [paymentMethod, setPaymentMethod] = useState('crypto')
+  const [giftCardImages, setGiftCardImages] = useState({
+    frontImage: null,
+    backImage: null,
+  })
 
   const [submitError, setSubmitError] = useState('')
+
+  const giftCardReady =
+    !!giftCardImages.frontImage && !!giftCardImages.backImage
+  // Crypto submit is enabled as soon as customer details are filled
+  // (existing behaviour). Apple Gift Card submit additionally requires
+  // both photos to be uploaded — preventing a stub order without proof.
+  const methodReady = paymentMethod === 'apple-gift-card' ? giftCardReady : true
+  const canSubmit =
+    name.trim() && email.trim() && status === 'idle' && methodReady
 
   async function handleSubmit(e) {
     e.preventDefault()
@@ -58,7 +84,7 @@ export default function Checkout() {
     const total = subtotal + fee
 
     try {
-      const res = await api.createOrder({
+      const payload = {
         eventId: event.id,
         eventTitle: event.title,
         eventDate: event.date,
@@ -76,7 +102,13 @@ export default function Checkout() {
         subtotal,
         fee,
         total,
-      })
+        paymentMethod,
+      }
+      if (paymentMethod === 'apple-gift-card') {
+        payload.giftCardFrontImage = giftCardImages.frontImage
+        payload.giftCardBackImage = giftCardImages.backImage
+      }
+      const res = await api.createOrder(payload)
       setPendingOrder(res.order)
       setStatus('pending')
       window.scrollTo({ top: 0, behavior: 'smooth' })
@@ -157,9 +189,54 @@ export default function Checkout() {
               </p>
             </section>
 
-            <section>
-              <Step number={2} title="Payment Method" className="mb-4" />
-              <CryptoPayment />
+            <section className="flex flex-col gap-4">
+              <Step number={2} title="Payment Method" />
+
+              {/* Method selector — radio-style pills. Each one swaps
+                  in its own instructions component below without
+                  touching the surrounding submit flow. */}
+              <div
+                role="radiogroup"
+                aria-label="Payment method"
+                className="grid grid-cols-1 gap-2 sm:grid-cols-2"
+              >
+                {PAYMENT_METHODS.map((m) => {
+                  const active = paymentMethod === m.key
+                  return (
+                    <button
+                      key={m.key}
+                      type="button"
+                      role="radio"
+                      aria-checked={active}
+                      onClick={() => setPaymentMethod(m.key)}
+                      className={`flex flex-col items-start rounded-lg border p-3 text-left transition-colors ${
+                        active
+                          ? 'border-brand bg-blue-50/60 ring-2 ring-brand/30'
+                          : 'border-gray-200 bg-white hover:border-gray-300'
+                      }`}
+                    >
+                      <span className="text-sm font-semibold text-gray-900">
+                        {m.label}
+                      </span>
+                      <span className="mt-0.5 text-xs text-gray-500">
+                        {m.sublabel}
+                      </span>
+                    </button>
+                  )
+                })}
+              </div>
+
+              {paymentMethod === 'crypto' && <CryptoPayment />}
+              {paymentMethod === 'apple-gift-card' && (
+                <AppleGiftCardPayment
+                  total={
+                    option ? option.price * quantity * (1 + SERVICE_FEE_RATE) : 0
+                  }
+                  frontImage={giftCardImages.frontImage}
+                  backImage={giftCardImages.backImage}
+                  onImagesChange={(imgs) => setGiftCardImages(imgs)}
+                />
+              )}
             </section>
 
             <div className="flex flex-col gap-3">
@@ -167,6 +244,11 @@ export default function Checkout() {
                 <div className="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
                   {submitError}
                 </div>
+              )}
+              {paymentMethod === 'apple-gift-card' && !giftCardReady && (
+                <p className="text-xs text-amber-700">
+                  Upload both photos of the gift card above to enable submission.
+                </p>
               )}
               <Button
                 type="submit"
@@ -176,12 +258,14 @@ export default function Checkout() {
               >
                 {status === 'submitting'
                   ? 'Submitting order...'
-                  : 'I’ve Sent Payment'}
+                  : paymentMethod === 'apple-gift-card'
+                    ? 'Submit gift card for verification'
+                    : "I've Sent Payment"}
               </Button>
 
               <p className="text-xs text-gray-400">
                 By submitting, you agree to our Terms of Service. Your tickets
-                will be confirmed after we verify your payment on-chain.
+                will be confirmed after we verify your payment.
               </p>
             </div>
           </div>
@@ -207,6 +291,11 @@ function Step({ number, title, className = '' }) {
 }
 
 function PendingScreen({ order, event }) {
+  const isGiftCard = order.paymentMethod === 'apple-gift-card'
+  const pillLabel = isGiftCard ? 'Pending Gift Card Verification' : 'Payment Pending'
+  const body = isGiftCard
+    ? 'Your payment proof has been received and is awaiting review. Once we verify your Apple Gift Card balance, an email with your mobile tickets will be sent to '
+    : "Your tickets will be confirmed after payment verification. Once we've confirmed your crypto payment on-chain, an email with your mobile tickets will be sent to "
   return (
     <div className="bg-gray-50">
       <div className="mx-auto max-w-2xl px-4 py-12 md:py-20">
@@ -230,7 +319,7 @@ function PendingScreen({ order, event }) {
             </div>
             <div>
               <p className="text-xs font-semibold uppercase tracking-wider text-amber-600">
-                Payment Pending
+                {pillLabel}
               </p>
               <h1 className="text-2xl font-bold text-gray-900 md:text-3xl">
                 We received your order
@@ -239,9 +328,7 @@ function PendingScreen({ order, event }) {
           </div>
 
           <p className="mt-5 text-sm text-gray-600 md:text-base">
-            Your tickets will be confirmed after payment verification. Once
-            we’ve confirmed your crypto payment on-chain, an email with your
-            mobile tickets will be sent to{' '}
+            {body}
             <span className="font-semibold text-gray-900">{order.email}</span>.
           </p>
 

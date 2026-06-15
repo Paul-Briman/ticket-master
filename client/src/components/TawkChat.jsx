@@ -32,12 +32,13 @@ let injected = false
  * root), so the cleanup only matters for dev StrictMode behavior.
  */
 // Routes where the chat bubble overlaps a critical full-width sticky
-// CTA (Checkout / mobile event-detail) on small screens. We hide the
-// widget on these paths at narrow viewports so it never blocks the
-// purchase flow, then re-show it when the user navigates elsewhere.
+// CTA on small screens. Currently this is only the event detail page
+// (which has a mobile MobileStickyCTA pinned to the bottom). /checkout
+// used to be on this list as a precaution, but the Apple Gift Card
+// flow has an explicit "Contact Support" button that calls maximize()
+// on the Tawk API — so the widget must stay available there.
 function pathBlocksCheckoutCTA(pathname) {
   if (!pathname) return false
-  if (pathname === '/checkout') return true
   if (pathname.startsWith('/event/')) return true
   return false
 }

@@ -18,6 +18,7 @@ export default function AdminOrders() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
   const [emailOrder, setEmailOrder] = useState(null)
+  const [imagesOrder, setImagesOrder] = useState(null) // gift-card images modal
   const [confirmingId, setConfirmingId] = useState(null)
   const [confirmError, setConfirmError] = useState('')
   const [rejecting, setRejecting] = useState(null) // order being rejected
@@ -180,6 +181,11 @@ export default function AdminOrders() {
                         <span className="text-xs text-gray-500">
                           {o.tierLabel} · × {o.quantity}
                         </span>
+                        {o.paymentMethod === 'apple-gift-card' && (
+                          <span className="mt-1 inline-flex w-fit items-center gap-1 rounded-full border border-purple-200 bg-purple-50 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-purple-700">
+                            🎁 Apple Gift Card
+                          </span>
+                        )}
                       </div>
                     </td>
                     <td className="px-4 py-3 font-semibold text-gray-900">
@@ -206,6 +212,16 @@ export default function AdminOrders() {
                     </td>
                     <td className="px-4 py-3 text-right">
                       <div className="flex justify-end gap-2">
+                        {o.paymentMethod === 'apple-gift-card' &&
+                          (o.giftCardFrontImage || o.giftCardBackImage) && (
+                            <button
+                              type="button"
+                              onClick={() => setImagesOrder(o)}
+                              className="rounded-md border border-purple-200 bg-white px-2.5 py-1 text-xs font-medium text-purple-700 transition-colors hover:border-purple-300 hover:bg-purple-50"
+                            >
+                              View Images
+                            </button>
+                          )}
                         {isPending && (
                           <>
                             <button
@@ -358,6 +374,86 @@ export default function AdminOrders() {
           </div>
         )}
       </Modal>
+
+      {/* Gift card images modal — shows customer-uploaded front + back
+          photos so admin can verify the card balance before approving. */}
+      <Modal
+        open={!!imagesOrder}
+        onClose={() => setImagesOrder(null)}
+        title={
+          imagesOrder
+            ? `Gift Card Images — ${imagesOrder.id}`
+            : 'Gift Card Images'
+        }
+        footer={
+          <Button
+            variant="secondary"
+            onClick={() => setImagesOrder(null)}
+            type="button"
+          >
+            Close
+          </Button>
+        }
+      >
+        {imagesOrder && (
+          <div className="space-y-4">
+            <div className="rounded-md border border-purple-100 bg-purple-50/40 px-3 py-2 text-xs text-gray-700">
+              <span className="font-semibold text-purple-700">Customer:</span>{' '}
+              {imagesOrder.user} · {imagesOrder.email}
+              <span className="mx-2 text-gray-300">·</span>
+              <span className="font-semibold text-purple-700">Total:</span>{' '}
+              {formatPrice(imagesOrder.total)}
+            </div>
+
+            <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+              <ImagePane
+                label="Front of card"
+                src={imagesOrder.giftCardFrontImage}
+              />
+              <ImagePane
+                label="Back of card"
+                src={imagesOrder.giftCardBackImage}
+              />
+            </div>
+
+            <p className="text-xs text-gray-500">
+              Verify the gift card number / PIN before approving. After approval
+              the standard confirmation email is sent and the ticket appears in
+              the customer's My Tickets.
+            </p>
+          </div>
+        )}
+      </Modal>
+    </div>
+  )
+}
+
+function ImagePane({ label, src }) {
+  return (
+    <div className="flex flex-col gap-2">
+      <p className="text-xs font-semibold uppercase tracking-wide text-gray-500">
+        {label}
+      </p>
+      <div className="overflow-hidden rounded-lg border border-gray-200 bg-gray-50">
+        {src ? (
+          <a
+            href={src}
+            target="_blank"
+            rel="noreferrer"
+            title="Open full size in a new tab"
+          >
+            <img
+              src={src}
+              alt={label}
+              className="block h-auto w-full object-contain"
+            />
+          </a>
+        ) : (
+          <div className="flex h-40 items-center justify-center text-xs text-gray-400">
+            Not uploaded
+          </div>
+        )}
+      </div>
     </div>
   )
 }
