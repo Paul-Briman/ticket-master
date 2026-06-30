@@ -156,7 +156,14 @@ export default function AdminPromotions() {
                 return (
                   <tr key={p.id} className="hover:bg-gray-50/50">
                     <td className="px-4 py-3">
-                      <div className="font-medium text-gray-900">{p.name}</div>
+                      <div className="flex flex-wrap items-center gap-1.5">
+                        <span className="font-medium text-gray-900">{p.name}</span>
+                        {p.featured && (
+                          <span className="inline-flex items-center rounded-full border border-purple-200 bg-purple-50 px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wide text-purple-700">
+                            ⭐ Featured
+                          </span>
+                        )}
+                      </div>
                       <div className="font-mono text-[10px] text-gray-400">{p.id}</div>
                     </td>
                     <td className="px-4 py-3 font-semibold text-gray-900">
@@ -280,6 +287,7 @@ function PromotionFormModal({ editing, onClose, onSaved }) {
         startsAt: new Date(form.startsAt).toISOString(),
         endsAt: new Date(form.endsAt).toISOString(),
         enabled: form.enabled,
+        featured: form.featured,
         appliesTo: buildAppliesTo(form),
       }
       if (isNew) {
@@ -437,15 +445,36 @@ function PromotionFormModal({ editing, onClose, onSaved }) {
             </label>
           )}
 
-          <label className="flex items-center gap-2 text-sm text-gray-700">
-            <input
-              type="checkbox"
-              checked={form.enabled}
-              onChange={(e) => setForm({ ...form, enabled: e.target.checked })}
-              className="h-4 w-4 rounded border-gray-300"
-            />
-            Enabled
-          </label>
+          <div className="flex flex-col gap-2 rounded-md border border-gray-200 bg-gray-50 p-3">
+            <label className="flex items-center gap-2 text-sm text-gray-700">
+              <input
+                type="checkbox"
+                checked={form.enabled}
+                onChange={(e) => setForm({ ...form, enabled: e.target.checked })}
+                className="h-4 w-4 rounded border-gray-300"
+              />
+              <span className="font-medium">Enabled</span>
+              <span className="text-xs text-gray-500">
+                — uncheck to pause without deleting
+              </span>
+            </label>
+            <label className="flex items-start gap-2 text-sm text-gray-700">
+              <input
+                type="checkbox"
+                checked={form.featured}
+                onChange={(e) => setForm({ ...form, featured: e.target.checked })}
+                className="mt-0.5 h-4 w-4 rounded border-gray-300"
+              />
+              <span className="flex-1">
+                <span className="font-medium">Featured Promotion</span>
+                <span className="block text-xs text-gray-500">
+                  Shows in the prominent homepage banner. Only ONE promo can
+                  be featured at a time — saving this with Featured on
+                  automatically un-features every other promotion.
+                </span>
+              </span>
+            </label>
+          </div>
 
           <PreviewBlock form={form} />
 
@@ -495,6 +524,7 @@ function initialForm(editing) {
       startsAt: toLocalInput(now),
       endsAt: toLocalInput(end),
       enabled: true,
+      featured: false,
       scope: 'all',
       category: 'sports',
       league: 'world-cup',
@@ -508,6 +538,7 @@ function initialForm(editing) {
     startsAt: toLocalInput(new Date(editing.startsAt)),
     endsAt: toLocalInput(new Date(editing.endsAt)),
     enabled: editing.enabled !== false,
+    featured: editing.featured === true,
     scope: editing.appliesTo?.scope || 'all',
     category: editing.appliesTo?.category || 'sports',
     league: editing.appliesTo?.league || 'world-cup',

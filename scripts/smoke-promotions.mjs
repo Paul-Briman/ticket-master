@@ -39,22 +39,18 @@ if (!process.env.ADMIN_PASSWORD) process.env.ADMIN_PASSWORD = '123456'
 
 const app = (await import('../api/index.js')).default
 const { db } = await import('../lib/db.js')
+const { defaultWorldCupPromotion } = await import('../lib/util/promotionEngine.js')
 
-// Reset the seed marker + any existing seeded promo so we exercise
-// the lazy-seed path on the first promotions request below.
+// Restore the World Cup Knockout Sale to a known-good state for the
+// "is the seeded WC promo present + featured + active" assertion
+// below. The lazy-seed marker prevents recreation after a deletion,
+// so we directly upsert the canonical seed record into KV. This
+// also clears any stale `featured` flag from prior test runs that
+// flipped it.
 try {
-  const promos = await db.listPromotions()
-  for (const p of promos) {
-    if (p.id === 'prm-world-cup-knockout') await db.deletePromotion(p.id)
-  }
-  // Clear the seeded marker via direct KV/file delete is not exposed
-  // through the db helper, but savePromotion + ensurePromotionsSeeded
-  // both write the marker; a quick way to test is to skip the marker
-  // reset and just verify the seed is present after first call. We do
-  // a soft assertion below: if the seed already existed from a prior
-  // run, it's still correct.
+  await db.savePromotion(defaultWorldCupPromotion(new Date()))
 } catch {
-  // ignore — db may be empty
+  // ignore — db may be in a transient state
 }
 
 const server = createServer(app)
@@ -152,7 +148,21 @@ await probe('GET /api/promotions seeds World Cup Knockout Sale', async () => {
     throw new Error('seed appliesTo wrong')
   }
   if (wc.status !== 'active') throw new Error(`seed not active: ${wc.status}`)
-  return `id=${wc.id} discount=${wc.discountValue}% status=${wc.status}`
+  if (wc.featured !== true) throw new Error('seed should be featured by default')
+  // Response also exposes the featured promo at top-level for convenience.
+  if (!body.featured || body.featured.id !== wc.id) {
+    throw new Error('featured top-level field wrong')
+  }
+  return `id=${wc.id} discount=${wc.discountValue}% featured=true`
+})
+
+await probe('GET /api/promotions/featured returns the seeded WC promo', async () => {
+  const { res, body } = await jfetch('/api/promotions/featured')
+  if (res.status !== 200) throw new Error(`status ${res.status}`)
+  if (body?.promotion?.id !== 'prm-world-cup-knockout') {
+    throw new Error(`featured id=${body?.promotion?.id}`)
+  }
+  return 'WC promo is the active featured campaign'
 })
 
 // === Admin CRUD ===
@@ -385,6 +395,57 @@ await probe('Create order with discounted price', async () => {
   if (res.status !== 201) throw new Error(`status ${res.status} body=${JSON.stringify(body)}`)
   if (body.order.total !== 78.4) throw new Error('total not stored as sent')
   return `id=${body.order.id} total=${body.order.total}`
+})
+
+// === Featured uniqueness ===
+console.log()
+console.log('=== Featured-promo uniqueness ===')
+
+await probe('Mark sitewide promo as featured → un-features the WC seed', async () => {
+  const { res, body } = await jfetch(
+    `/api/admin/promotions/${createdPromoId}`,
+    { method: 'PATCH', body: JSON.stringify({ featured: true }) },
+    adminToken,
+  )
+  if (!res.ok) throw new Error(`status ${res.status}`)
+  if (body.promotion.featured !== true) throw new Error('not featured after patch')
+
+  // Now /api/promotions/featured should return the SITEWIDE promo,
+  // and the WC seed should no longer be featured.
+  const { body: listBody } = await jfetch('/api/promotions')
+  const wc = (listBody.promotions || []).find((p) => p.id === 'prm-world-cup-knockout')
+  if (wc?.featured === true) throw new Error('WC still featured — uniqueness violated')
+
+  const { body: featuredBody } = await jfetch('/api/promotions/featured')
+  if (featuredBody?.promotion?.id !== createdPromoId) {
+    throw new Error(`featured endpoint id=${featuredBody?.promotion?.id}, expected ${createdPromoId}`)
+  }
+  return 'old featured cleared, new featured live'
+})
+
+await probe('Disabling the only featured promo → /featured returns 204', async () => {
+  await jfetch(
+    `/api/admin/promotions/${createdPromoId}`,
+    { method: 'PATCH', body: JSON.stringify({ enabled: false }) },
+    adminToken,
+  )
+  const { res } = await jfetch('/api/promotions/featured')
+  // No active featured → 204. (WC is no longer featured either.)
+  if (res.status !== 204) throw new Error(`expected 204, got ${res.status}`)
+
+  // Re-enable + re-mark WC as featured so we leave the DB in a tidy
+  // state for any subsequent runs.
+  await jfetch(
+    `/api/admin/promotions/${createdPromoId}`,
+    { method: 'PATCH', body: JSON.stringify({ enabled: true, featured: false }) },
+    adminToken,
+  )
+  await jfetch(
+    `/api/admin/promotions/prm-world-cup-knockout`,
+    { method: 'PATCH', body: JSON.stringify({ featured: true }) },
+    adminToken,
+  )
+  return '204 when no featured + WC restored as featured'
 })
 
 // === Cleanup ===

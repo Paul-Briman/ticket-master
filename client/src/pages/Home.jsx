@@ -4,6 +4,7 @@ import EventCard from '../components/EventCard.jsx'
 import CardScroller from '../components/CardScroller.jsx'
 import LiveSportsSection from '../components/LiveSportsSection.jsx'
 import LiveEventsSection from '../components/LiveEventsSection.jsx'
+import HomePromotionBanner from '../components/HomePromotionBanner.jsx'
 import { CityFeatureCard } from '../components/CityCard.jsx'
 import LeagueCard from '../components/sports/LeagueCard.jsx'
 import { POPULAR_US_CITIES } from '../data/cities.js'
@@ -28,6 +29,12 @@ export default function Home() {
   return (
     <div className="flex flex-col">
       <Hero />
+
+      {/* Featured promotion banner — renders nothing when no
+          campaign is currently active+featured, vanishes when its
+          countdown hits zero. Sits between Hero and the first content
+          lane so it's prominent but doesn't disrupt the hero. */}
+      <HomePromotionBanner />
 
       {recentEvents.length > 0 && (
         <Section

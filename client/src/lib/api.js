@@ -100,6 +100,7 @@ export const api = {
 
   // Promotions
   promotions: () => request('/api/promotions', { auth: false }),
+  featuredPromotion: () => request('/api/promotions/featured', { auth: false }),
   adminPromotions: () => request('/api/admin/promotions'),
   adminCreatePromotion: (payload) =>
     request('/api/admin/promotions', { method: 'POST', body: payload }),
