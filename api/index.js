@@ -8,6 +8,7 @@ import familyRouter from '../lib/routes/family.js'
 import adminEventsRouter from '../lib/routes/adminEvents.js'
 import adminUsersRouter from '../lib/routes/adminUsers.js'
 import eventsRouter from '../lib/routes/events.js'
+import promotionsRouter from '../lib/routes/promotions.js'
 
 const app = express()
 
@@ -103,6 +104,10 @@ app.use('/api/arts', artsRouter)
 app.use('/api/family', familyRouter)
 app.use('/api/admin/events', adminEventsRouter)
 app.use('/api/admin/users', adminUsersRouter)
+// promotionsRouter exposes both /api/promotions (public) and
+// /api/admin/promotions (admin) under one mount so the router's
+// internal admin sub-router can share validation helpers.
+app.use('/api', promotionsRouter)
 
 app.use((req, res) => {
   res.status(404).json({ error: 'Not found', path: req.url })

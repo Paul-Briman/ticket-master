@@ -252,10 +252,44 @@ export function getSeatOptions(event) {
   }
 
   const options = [...grouped.vip, ...grouped.premium, ...grouped.standard]
-  return options.map((o) => ({
-    ...o,
-    ...buildAvailability(event.id, o.key, o.tier),
-  }))
+  return options.map((o) => {
+    const withAvail = {
+      ...o,
+      ...buildAvailability(event.id, o.key, o.tier),
+    }
+    // If an active promotion was decorated by the backend, replace
+    // the per-row price with the discounted version and stash the
+    // original on `originalPrice` so the UI can render a strikethrough.
+    // Done at the row level so each row's variance carries through to
+    // the customer-facing price. For percentage discounts this is
+    // equivalent to discounting the tier base; for fixed-amount it
+    // applies the same dollar reduction to every row in the tier.
+    if (event.promotion) {
+      const discounted = discountedRowPrice(withAvail.price, event.promotion)
+      return {
+        ...withAvail,
+        originalPrice: withAvail.price,
+        price: discounted,
+      }
+    }
+    return withAvail
+  })
+}
+
+// Helper: apply the active promotion to a single row's price.
+function discountedRowPrice(originalPrice, promotion) {
+  if (!promotion) return originalPrice
+  const base = Number(originalPrice) || 0
+  if (base <= 0) return 0
+  if (promotion.discountType === 'percentage') {
+    const pct = Math.max(0, Math.min(100, Number(promotion.discountValue) || 0))
+    return Math.max(0, Math.round(base * (1 - pct / 100)))
+  }
+  if (promotion.discountType === 'fixed') {
+    const amt = Math.max(0, Number(promotion.discountValue) || 0)
+    return Math.max(0, Math.round(base - amt))
+  }
+  return base
 }
 
 export function availabilityColors(percent) {

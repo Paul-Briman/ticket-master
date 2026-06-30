@@ -98,6 +98,25 @@ export const api = {
   adminDeleteEvent: (id) =>
     request(`/api/admin/events/${encodeURIComponent(id)}`, { method: 'DELETE' }),
 
+  // Promotions
+  promotions: () => request('/api/promotions', { auth: false }),
+  adminPromotions: () => request('/api/admin/promotions'),
+  adminCreatePromotion: (payload) =>
+    request('/api/admin/promotions', { method: 'POST', body: payload }),
+  adminUpdatePromotion: (id, patch) =>
+    request(`/api/admin/promotions/${encodeURIComponent(id)}`, {
+      method: 'PATCH',
+      body: patch,
+    }),
+  adminClonePromotion: (id) =>
+    request(`/api/admin/promotions/${encodeURIComponent(id)}/clone`, {
+      method: 'POST',
+    }),
+  adminDeletePromotion: (id) =>
+    request(`/api/admin/promotions/${encodeURIComponent(id)}`, {
+      method: 'DELETE',
+    }),
+
   adminUsers: () => request('/api/admin/users'),
   adminDeleteUser: (email) =>
     request(`/api/admin/users/${encodeURIComponent(email)}`, { method: 'DELETE' }),

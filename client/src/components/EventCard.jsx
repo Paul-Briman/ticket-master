@@ -75,9 +75,15 @@ export default function EventCard(props) {
     awayTeam,
     homeCrest,
     awayCrest,
+    pricing,
+    promotion,
   } = props
   const href = id ? `/event/${id}` : '#'
   const hasVersus = !!(homeCrest && awayCrest && homeTeam && awayTeam)
+  // When the backend decorated this event with a promotion, derive the
+  // original "from" price from event.pricing so the strikethrough shows
+  // a real number alongside the (already-discounted) `price` string.
+  const originalFromText = promotion ? computeFromText(pricing) : null
 
   return (
     <Link
@@ -116,6 +122,12 @@ export default function EventCard(props) {
             {badge}
           </span>
         )}
+
+        {promotion && (
+          <span className="absolute right-3 top-3 inline-flex items-center gap-1 rounded-full bg-gradient-to-r from-red-500 to-pink-600 px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wide text-white shadow-md">
+            {formatPromoLabel(promotion)}
+          </span>
+        )}
       </div>
 
       <div className="flex flex-1 flex-col gap-2 p-4">
@@ -129,11 +141,33 @@ export default function EventCard(props) {
         </div>
 
         {price && (
-          <div className="mt-auto pt-2 text-sm font-semibold text-brand">
-            From {price}
+          <div className="mt-auto flex items-baseline gap-2 pt-2 text-sm">
+            {promotion && originalFromText && (
+              <span className="text-gray-400 line-through">{originalFromText}</span>
+            )}
+            <span className="font-semibold text-brand">From {price}</span>
           </div>
         )}
       </div>
     </Link>
   )
+}
+
+// Tiny local helpers — duplicating the label format here avoids
+// importing PromotionBadge into every card render (perf) and keeps
+// the card self-contained.
+function formatPromoLabel(promotion) {
+  if (!promotion) return ''
+  if (promotion.discountType === 'percentage') return `${Math.round(promotion.discountValue)}% OFF`
+  if (promotion.discountType === 'fixed') return `$${Math.round(promotion.discountValue)} OFF`
+  return 'SALE'
+}
+
+function computeFromText(pricing) {
+  if (!pricing) return null
+  const values = Object.values(pricing).filter(
+    (v) => typeof v === 'number' && Number.isFinite(v) && v > 0,
+  )
+  if (values.length === 0) return null
+  return `$${Math.min(...values).toFixed(0)}`
 }

@@ -10,6 +10,10 @@ import Button from '../components/Button.jsx'
 import EventCountdown from '../components/EventCountdown.jsx'
 import FavoriteButton from '../components/FavoriteButton.jsx'
 import TrustBadges from '../components/TrustBadges.jsx'
+import PromotionBadge, {
+  formatPromotionLabel,
+} from '../components/PromotionBadge.jsx'
+import PromotionCountdown from '../components/PromotionCountdown.jsx'
 import { EVENTS } from '../data/events.js'
 import { formatPrice, getSeatOptions, SERVICE_FEE_RATE } from '../lib/price.js'
 import { recordRecentView } from '../lib/recentlyViewed.js'
@@ -107,6 +111,17 @@ export default function EventDetails() {
         <div className="mx-auto max-w-7xl px-4 py-8 md:px-6 md:py-12">
           <div className="grid grid-cols-1 gap-8 lg:grid-cols-[1fr_380px]">
             <div className="flex flex-col gap-6">
+              {!expired && event.promotion && (
+                <PromotionBanner
+                  promotion={event.promotion}
+                  // Reload the page if the timer hits zero — the next
+                  // detail response will come back without a promotion
+                  // field, so all the discounted prices/badges
+                  // disappear automatically.
+                  onExpire={() => window.location.reload()}
+                />
+              )}
+
               {expired ? (
                 <article className="rounded-lg border border-amber-200 bg-amber-50 p-5 md:p-6">
                   <p className="text-xs font-semibold uppercase tracking-wider text-amber-700">
@@ -264,6 +279,38 @@ function Detail({ label, value }) {
       </dt>
       <dd className="mt-1 text-sm font-medium text-gray-900">{value}</dd>
     </div>
+  )
+}
+
+function PromotionBanner({ promotion, onExpire }) {
+  if (!promotion) return null
+  return (
+    <article className="overflow-hidden rounded-lg border border-blue-200 bg-gradient-to-br from-blue-700 via-brand to-blue-900 p-5 text-white shadow-md md:p-6">
+      <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between md:gap-6">
+        <div className="min-w-0">
+          <div className="flex flex-wrap items-center gap-2">
+            <span className="inline-flex items-center rounded-full bg-white/15 px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-widest text-white backdrop-blur">
+              Limited time
+            </span>
+            <PromotionBadge promotion={promotion} size="md" />
+          </div>
+          <h3 className="mt-2 text-lg font-bold leading-tight md:text-xl">
+            {promotion.name}
+          </h3>
+          <p className="mt-1 text-sm text-white/85">
+            Get <strong>{formatPromotionLabel(promotion)}</strong> automatically
+            applied at checkout. Sale ends when the timer hits zero.
+          </p>
+        </div>
+
+        <div className="flex flex-col items-start gap-2 md:items-end">
+          <span className="text-[10px] font-semibold uppercase tracking-widest text-white/70">
+            Sale ends in
+          </span>
+          <PromotionCountdown endsAt={promotion.endsAt} onExpire={onExpire} />
+        </div>
+      </div>
+    </article>
   )
 }
 
