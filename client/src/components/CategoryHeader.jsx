@@ -1,11 +1,16 @@
+import Image from './Image.jsx'
+
 export default function CategoryHeader({ title, subtitle, image }) {
   return (
     <section className="relative isolate overflow-hidden">
       <div className="absolute inset-0 -z-10">
-        <img
+        <Image
           src={image}
           alt={title}
           className="h-full w-full object-cover"
+          // LCP element on every category landing page — prioritize
+          // so the hero paints before the event grid populates.
+          priority
         />
         <div className="absolute inset-0 bg-gradient-to-r from-black/75 via-black/55 to-black/30" />
       </div>

@@ -1,4 +1,5 @@
 import { leagueImg } from '../../lib/image.js'
+import Image from '../Image.jsx'
 
 export default function LeagueHero({ league }) {
   const image = leagueImg(league.key, { w: 1920, h: 700, lock: 50 })
@@ -6,10 +7,12 @@ export default function LeagueHero({ league }) {
   return (
     <section className="relative isolate overflow-hidden">
       <div className="absolute inset-0 -z-10">
-        <img
+        <Image
           src={image}
           alt={league.name}
           className="h-full w-full object-cover"
+          // LCP element on the league landing page → prioritize.
+          priority
         />
         <div
           className={`absolute inset-0 bg-gradient-to-r ${league.accent} opacity-80 mix-blend-multiply`}

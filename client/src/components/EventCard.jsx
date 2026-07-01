@@ -1,5 +1,6 @@
 import { Link } from 'react-router-dom'
 import FavoriteButton from './FavoriteButton.jsx'
+import Image from './Image.jsx'
 
 const BADGE_STYLES = {
   hot: 'bg-red-50 text-red-600 border border-red-200',
@@ -14,10 +15,9 @@ function VersusVisual({ homeTeam, awayTeam, homeCrest, awayCrest }) {
         <div className="flex flex-1 flex-col items-center gap-2 text-center">
           <div className="flex h-16 w-16 items-center justify-center rounded-full bg-white p-1 shadow-sm md:h-20 md:w-20">
             {homeCrest ? (
-              <img
+              <Image
                 src={homeCrest}
                 alt={homeTeam || 'Home team'}
-                loading="lazy"
                 className="h-full w-full object-contain"
               />
             ) : (
@@ -40,10 +40,9 @@ function VersusVisual({ homeTeam, awayTeam, homeCrest, awayCrest }) {
         <div className="flex flex-1 flex-col items-center gap-2 text-center">
           <div className="flex h-16 w-16 items-center justify-center rounded-full bg-white p-1 shadow-sm md:h-20 md:w-20">
             {awayCrest ? (
-              <img
+              <Image
                 src={awayCrest}
                 alt={awayTeam || 'Away team'}
-                loading="lazy"
                 className="h-full w-full object-contain"
               />
             ) : (
@@ -101,10 +100,9 @@ export default function EventCard(props) {
             awayCrest={awayCrest}
           />
         ) : image ? (
-          <img
+          <Image
             src={image}
             alt={title}
-            loading="lazy"
             className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
           />
         ) : (

@@ -1,4 +1,5 @@
 import { Link } from 'react-router-dom'
+import Image from './Image.jsx'
 
 /**
  * Render a city teaser card. The `count` prop is the count of upcoming
@@ -26,10 +27,9 @@ export function CityFeatureCard({ name, slug, count, loading = false, image }) {
       className="group relative block overflow-hidden rounded-lg border border-gray-200 bg-white transition-all duration-200 hover:-translate-y-1 hover:border-gray-300 hover:shadow-md"
     >
       <div className="aspect-[4/3] w-full overflow-hidden bg-gray-100">
-        <img
+        <Image
           src={image}
           alt={name}
-          loading="lazy"
           className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
         />
         <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/10 to-transparent" />

@@ -8,6 +8,7 @@ import { useAuth } from '../lib/auth.jsx'
 import { ORDER_STATUS } from '../lib/adminStore.jsx'
 import { api } from '../lib/api.js'
 import { formatPrice, optionLabel } from '../lib/price.js'
+import Image from '../components/Image.jsx'
 
 export default function MyTickets() {
   const { user } = useAuth()
@@ -188,11 +189,10 @@ function ConfirmedCard({ ticket, onView }) {
         <div className="grid grid-cols-1 md:grid-cols-[1fr_auto]">
           <div className="flex">
             {ticket.eventImage && (
-              <img
+              <Image
                 src={ticket.eventImage}
                 alt=""
                 className="hidden h-auto w-32 shrink-0 object-cover sm:block md:w-40"
-                loading="lazy"
               />
             )}
             <div className="min-w-0 flex-1 p-5">
@@ -256,11 +256,10 @@ function PendingCard({ ticket }) {
         <div className="grid grid-cols-1 md:grid-cols-[1fr_auto]">
           <div className="flex">
             {ticket.eventImage && (
-              <img
+              <Image
                 src={ticket.eventImage}
                 alt=""
                 className="hidden h-auto w-32 shrink-0 object-cover sm:block md:w-40"
-                loading="lazy"
               />
             )}
             <div className="min-w-0 flex-1 p-5">
@@ -319,11 +318,10 @@ function RejectedCard({ ticket }) {
         <div className="grid grid-cols-1 md:grid-cols-[1fr_auto]">
           <div className="flex">
             {ticket.eventImage && (
-              <img
+              <Image
                 src={ticket.eventImage}
                 alt=""
                 className="hidden h-auto w-32 shrink-0 object-cover opacity-60 sm:block md:w-40"
-                loading="lazy"
               />
             )}
             <div className="min-w-0 flex-1 p-5">

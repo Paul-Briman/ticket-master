@@ -1,5 +1,6 @@
 import { Link } from 'react-router-dom'
 import { leagueImg } from '../../lib/image.js'
+import Image from '../Image.jsx'
 
 /**
  * Display a league hero card. The count comes from the parent (which
@@ -31,10 +32,9 @@ export default function LeagueCard({ league, lock = 1, count, loading = false })
       to={`/sports/${league.key}`}
       className="group relative block aspect-[4/3] overflow-hidden rounded-lg border border-gray-200 bg-white transition-all duration-200 hover:-translate-y-1 hover:border-gray-300 hover:shadow-md"
     >
-      <img
+      <Image
         src={image}
         alt={league.name}
-        loading="lazy"
         className="absolute inset-0 h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
       />
       <div

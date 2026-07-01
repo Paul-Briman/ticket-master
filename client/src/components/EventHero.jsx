@@ -16,6 +16,8 @@
 // present — partial data falls through to the image hero rather than
 // rendering a one-sided versus visual.
 
+import Image from './Image.jsx'
+
 function categoryLabel(category) {
   if (category === 'concerts') return 'Live Concert'
   if (category === 'arts') return 'Arts & Theater'
@@ -65,7 +67,10 @@ function VersusHero({ event, category, location }) {
           Falls back gracefully if missing. */}
       {event.image && (
         <div className="absolute inset-0 -z-10">
-          <img
+          {/* Background watermark on the versus hero is decorative
+              only — sits at 10% opacity behind a heavy gradient. Not
+              a priority image; skip fetch prioritization. */}
+          <Image
             src={event.image}
             alt=""
             aria-hidden
@@ -132,12 +137,14 @@ function TeamBlock({ name, crest, sideLabel }) {
     <div className="flex min-w-0 flex-1 flex-col items-center gap-2 text-center md:gap-3">
       <div className="flex h-20 w-20 items-center justify-center rounded-full bg-white p-2 shadow-lg shadow-blue-900/40 sm:h-24 sm:w-24 md:h-32 md:w-32 md:p-3">
         {crest ? (
-          <img
+          <Image
             src={crest}
             alt={name || sideLabel}
             className="h-full w-full object-contain"
-            // eager so the hero is fully rendered on first paint
-            loading="eager"
+            // Above-the-fold hero crest — prioritize so the versus
+            // visual paints on first frame instead of showing a
+            // white placeholder circle.
+            priority
           />
         ) : (
           <span className="text-xs font-semibold text-gray-400">
@@ -159,10 +166,13 @@ function ImageHero({ event, category, location }) {
     <section className="relative isolate overflow-hidden">
       <div className="absolute inset-0 -z-10">
         {event.image ? (
-          <img
+          <Image
             src={event.image}
             alt={event.title}
             className="h-full w-full object-cover"
+            // LCP element on every event detail page — fetch with
+            // high priority so the hero paints as fast as possible.
+            priority
           />
         ) : (
           // Brand-blue fallback if there's no provider image at all.

@@ -2,6 +2,7 @@ import { formatPrice, optionLabel, SERVICE_FEE_RATE } from '../lib/price.js'
 import PromotionBadge, {
   formatPromotionLabel,
 } from './PromotionBadge.jsx'
+import Image from './Image.jsx'
 
 export default function OrderSummary({ event, option, quantity }) {
   // option.price is ALREADY the promotion-discounted per-ticket
@@ -19,7 +20,7 @@ export default function OrderSummary({ event, option, quantity }) {
   return (
     <aside className="rounded-lg border border-gray-200 bg-white shadow-sm">
       <div className="overflow-hidden rounded-t-lg">
-        <img
+        <Image
           src={event.image}
           alt={event.title}
           className="h-32 w-full object-cover"
