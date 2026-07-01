@@ -45,12 +45,14 @@ export default function FavoriteButton({
     }
     if (!id) return
     const payload = event || { id, title }
-    const added = toggleFavorite(payload)
+    // toggleFavorite returns the FINAL state after the toggle —
+    // true = event is now in favorites, false = it was just removed.
+    // Message is derived from the post-toggle state, never from a
+    // stale pre-click assumption.
+    const isNowFavorited = toggleFavorite(payload)
     toast(
-      added
-        ? `Saved${title ? ` "${title}"` : ''} to your favorites`
-        : 'Removed from favorites',
-      { type: added ? 'success' : 'info' },
+      isNowFavorited ? '❤️ Added to Favorites' : '💔 Removed from Favorites',
+      { type: isNowFavorited ? 'success' : 'info' },
     )
   }
 
