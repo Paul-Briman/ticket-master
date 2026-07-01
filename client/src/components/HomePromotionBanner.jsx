@@ -106,7 +106,13 @@ function PromoBannerView({ promotion, onExpire }) {
             </div>
 
             <h2 className="text-2xl font-bold leading-tight md:text-3xl lg:text-4xl">
-              <span aria-hidden className="mr-1.5">🏆</span>
+              {/* Promotion-agnostic golden-ticket icon — reads
+                  correctly whether the current campaign is a World
+                  Cup Knockout Sale, a Black Friday sitewide sale, a
+                  Concert Summer Sale, etc. Do NOT swap this for a
+                  category-specific glyph without checking the full
+                  set of campaigns admins might launch. */}
+              <span aria-hidden className="mr-1.5">🎟️</span>
               {promotion.name}
             </h2>
 

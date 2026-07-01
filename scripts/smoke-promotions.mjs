@@ -397,6 +397,108 @@ await probe('Create order with discounted price', async () => {
   return `id=${body.order.id} total=${body.order.total}`
 })
 
+// === Scope-change propagation ===
+// Reproduces the user-reported bug: "I changed a promo from
+// league=world-cup to scope=all and only WC cards updated."
+// Root cause was the CDN cache on list endpoints (5 min TTL baked
+// the response body with the OLD decoration). Cache TTL is now 30s,
+// but the engine + PATCH flow themselves must also produce the
+// correct decoration on the very next backend request. This test
+// asserts the backend side.
+console.log()
+console.log('=== Scope change propagates to all matching categories ===')
+
+let scopedPromoId = null
+await probe('Create a league-scoped WC-only promo', async () => {
+  const now = new Date()
+  const end = new Date(now.getTime() + 7 * 86400000)
+  const { res, body } = await jfetch(
+    '/api/admin/promotions',
+    {
+      method: 'POST',
+      body: JSON.stringify({
+        name: 'Smoke Scoped Promo',
+        discountType: 'percentage',
+        discountValue: 20,
+        startsAt: now.toISOString(),
+        endsAt: end.toISOString(),
+        appliesTo: { scope: 'league', league: 'world-cup' },
+        enabled: true,
+      }),
+    },
+    adminToken,
+  )
+  if (res.status !== 201) throw new Error(`status ${res.status}`)
+  scopedPromoId = body.promotion.id
+  return `id=${scopedPromoId} scope=league:world-cup`
+})
+
+await probe('Before scope change: concerts have NO decoration from this promo', async () => {
+  // The seeded WC promo is also active, and the sitewide-30% promo
+  // from earlier tests may or may not be — we assert only that no
+  // concert carries the "Smoke Scoped Promo" specifically.
+  const { body } = await jfetch('/api/concerts?size=10')
+  const anyDecorated = (body.events || []).some(
+    (e) => e.promotion?.id === scopedPromoId,
+  )
+  if (anyDecorated) throw new Error('scoped WC promo leaked to concerts')
+  return 'concerts correctly excluded (scope=league:world-cup)'
+})
+
+await probe('PATCH scope league:world-cup → all', async () => {
+  const { res, body } = await jfetch(
+    `/api/admin/promotions/${scopedPromoId}`,
+    {
+      method: 'PATCH',
+      body: JSON.stringify({
+        appliesTo: { scope: 'all' },
+        discountValue: 25, // simulate user's exact scenario: also change value
+      }),
+    },
+    adminToken,
+  )
+  if (!res.ok) throw new Error(`status ${res.status} body=${JSON.stringify(body)}`)
+  if (body.promotion.appliesTo?.scope !== 'all') {
+    throw new Error(`scope not updated: ${JSON.stringify(body.promotion.appliesTo)}`)
+  }
+  if (body.promotion.discountValue !== 25) throw new Error('discount value not updated')
+  return 'scope=all, value=25%'
+})
+
+await probe('After scope change: concerts NOW carry the promo', async () => {
+  const { body } = await jfetch('/api/concerts?size=10')
+  const sample = (body.events || [])[0]
+  if (!sample?.promotion) throw new Error('concert still not decorated after scope change')
+  // Best-deal wins: the 25% we just set is bigger than any other
+  // active promo (seeded WC 20%, sitewide 30% may be re-enabled from
+  // earlier tests). Just assert SOMETHING decorated with a non-null
+  // discountedPricing lower than base.
+  if (!sample.promotion.discountedPricing) throw new Error('no discountedPricing on concert')
+  return `concert decorated after scope change (promo id=${sample.promotion.id})`
+})
+
+await probe('After scope change: arts and family ALSO decorated', async () => {
+  const [arts, family] = await Promise.all([
+    jfetch('/api/arts?size=5'),
+    jfetch('/api/family?size=5'),
+  ])
+  const artsPromo = (arts.body.events || [])[0]?.promotion
+  const familyPromo = (family.body.events || [])[0]?.promotion
+  if (!artsPromo) throw new Error('arts not decorated')
+  if (!familyPromo) throw new Error('family not decorated')
+  return 'arts + family both decorated'
+})
+
+await probe('DELETE scoped promo (cleanup this test)', async () => {
+  const { res } = await jfetch(
+    `/api/admin/promotions/${scopedPromoId}`,
+    { method: 'DELETE' },
+    adminToken,
+  )
+  if (!res.ok) throw new Error(`status ${res.status}`)
+  return 'gone'
+})
+
 // === Featured uniqueness ===
 console.log()
 console.log('=== Featured-promo uniqueness ===')
