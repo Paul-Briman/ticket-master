@@ -1,3 +1,4 @@
+import { useMemo } from 'react'
 import Hero from '../components/Hero.jsx'
 import Section from '../components/Section.jsx'
 import EventCard from '../components/EventCard.jsx'
@@ -12,19 +13,158 @@ import { SPORTS_LEAGUES } from '../data/leagues.js'
 import { useRecentlyViewed } from '../lib/recentlyViewed.js'
 import { useCityEvents } from '../lib/useCityEvents.js'
 import { useAllSportsEvents } from '../lib/useAllSportsEvents.js'
+import {
+  useHomepageSections,
+  SECTION_META,
+} from '../lib/useHomepageSections.js'
+
+// Slots that share the sports data layer. Featured Sports's dedup
+// contract explicitly excludes any league whose dedicated lane is
+// enabled — even if that lane is truncated by its display limit,
+// remaining events belong under the lane's "See All" link, not on
+// the homepage a second time.
+const DEDICATED_SPORTS_LEAGUES = {
+  'world-cup-knockout': 'world-cup',
+  ucl: 'ucl',
+  nba: 'nba',
+}
 
 export default function Home() {
   const { recent } = useRecentlyViewed()
   const recentEvents = recent
   const { byCity, loading: citiesLoading } = useCityEvents()
 
-  // Single source of truth for every sports section on this page —
-  // the "Popular World Cup Matches" lane, the league cards' counts,
-  // and (transitively) the league pages all read from the same
-  // per-league cache so a card count and the page it links to can
-  // never disagree.
+  // Single source of truth for every sports section on this page.
+  // Same per-league cache used by /sports and the League page so a
+  // card count and the page it links to can never disagree.
   const sportsByLeague = useAllSportsEvents()
-  const wcEvents = sportsByLeague.byLeague['world-cup'] || []
+
+  // Admin-controlled section config. Falls back gracefully to the
+  // built-in defaults before the API resolves — never renders blank.
+  const { sections } = useHomepageSections()
+
+  // Precompute the featured-sports event pool so the Section builder
+  // doesn't have to loop nested. Excludes every league that owns a
+  // dedicated enabled lane on this homepage config.
+  const featuredSportsEvents = useMemo(() => {
+    const enabledDedicatedLeagues = new Set()
+    for (const cfg of sections) {
+      if (!cfg.enabled) continue
+      const league = DEDICATED_SPORTS_LEAGUES[cfg.key]
+      if (league) enabledDedicatedLeagues.add(league)
+    }
+    return sportsByLeague.allEvents.filter(
+      (e) => !enabledDedicatedLeagues.has(e.league),
+    )
+  }, [sections, sportsByLeague.allEvents])
+
+  // Render each admin-enabled section in the configured order. Empty
+  // sections are auto-hidden by the LiveSportsSection /
+  // LiveEventsSection hideWhenEmpty prop so the layout closes gaps.
+  function renderSection(cfg) {
+    if (!cfg.enabled) return null
+    const meta = SECTION_META[cfg.key]
+    if (!meta) return null
+    const limit = Number.isFinite(cfg.limit) ? cfg.limit : 8
+
+    switch (cfg.key) {
+      case 'world-cup-knockout': {
+        const events = sportsByLeague.byLeague['world-cup'] || []
+        return (
+          <LiveSportsSection
+            key={cfg.key}
+            title={meta.title}
+            subtitle={meta.subtitle}
+            seeAllHref={meta.seeAllHref}
+            events={events}
+            loading={sportsByLeague.loading}
+            displaySize={limit}
+            hideWhenEmpty
+          />
+        )
+      }
+      case 'ucl': {
+        const events = sportsByLeague.byLeague.ucl || []
+        return (
+          <LiveSportsSection
+            key={cfg.key}
+            title={meta.title}
+            subtitle={meta.subtitle}
+            seeAllHref={meta.seeAllHref}
+            events={events}
+            loading={sportsByLeague.loading}
+            displaySize={limit}
+            hideWhenEmpty
+          />
+        )
+      }
+      case 'nba': {
+        const events = sportsByLeague.byLeague.nba || []
+        return (
+          <LiveSportsSection
+            key={cfg.key}
+            title={meta.title}
+            subtitle={meta.subtitle}
+            seeAllHref={meta.seeAllHref}
+            events={events}
+            loading={sportsByLeague.loading}
+            displaySize={limit}
+            hideWhenEmpty
+          />
+        )
+      }
+      case 'featured-sports': {
+        return (
+          <LiveSportsSection
+            key={cfg.key}
+            title={meta.title}
+            subtitle={meta.subtitle}
+            seeAllHref={meta.seeAllHref}
+            events={featuredSportsEvents}
+            loading={sportsByLeague.loading}
+            displaySize={limit}
+            background="gray"
+            hideWhenEmpty
+          />
+        )
+      }
+      case 'concerts':
+      case 'arts':
+      case 'family': {
+        return (
+          <LiveEventsSection
+            key={cfg.key}
+            category={cfg.key}
+            title={meta.title}
+            subtitle={meta.subtitle}
+            seeAllHref={meta.seeAllHref}
+            // Fetch exactly what we'll render so we don't over-fetch
+            // when the admin has reduced the limit. size is passed
+            // through to /api/{category}?size=…
+            size={limit}
+            // Alternate gray background for visual rhythm — the
+            // pattern was odd/even in the old hardcoded layout. Since
+            // the order is now dynamic, we hand this off to the
+            // rendered list below via array index instead of naming
+            // it here.
+            hideWhenEmpty
+          />
+        )
+      }
+      default:
+        return null
+    }
+  }
+
+  // Build the ordered list of rendered sections. Filter nulls (from
+  // disabled or unknown keys) BEFORE assigning alternating backgrounds
+  // so the visual rhythm stays consistent even after the admin toggles
+  // a section off.
+  const orderedSections = sections
+    .slice()
+    .sort((a, b) => (a.order ?? 0) - (b.order ?? 0))
+    .map((cfg) => renderSection(cfg))
+    .filter(Boolean)
 
   return (
     <div className="flex flex-col">
@@ -32,8 +172,7 @@ export default function Home() {
 
       {/* Featured promotion banner — renders nothing when no
           campaign is currently active+featured, vanishes when its
-          countdown hits zero. Sits between Hero and the first content
-          lane so it's prominent but doesn't disrupt the hero. */}
+          countdown hits zero. */}
       <HomePromotionBanner />
 
       {recentEvents.length > 0 && (
@@ -50,19 +189,18 @@ export default function Home() {
         </Section>
       )}
 
-      {/* Anchor target for the Hero "Browse Matches" CTA. The
-          scroll-margin-top accounts for the sticky navbar height so
-          smooth-scroll lands the heading just under the header. */}
+      {/* Anchor target for the Hero "Browse Matches" CTA — kept just
+          before the sports lanes so smooth-scroll lands under the
+          navbar into the first admin-visible section. */}
       <div id="matches-section" className="scroll-mt-24 md:scroll-mt-28" />
-      <LiveSportsSection
-        title="Popular World Cup Matches"
-        subtitle="Upcoming FIFA World Cup fixtures."
-        seeAllHref="/sports/world-cup"
-        events={wcEvents}
-        loading={sportsByLeague.loading}
-        displaySize={12}
-      />
 
+      {/* Admin-controlled sections rendered in the saved order. Each
+          one auto-hides if it has zero upcoming events. */}
+      {orderedSections}
+
+      {/* League grid + Popular cities remain fixed navigation aids —
+          intentionally NOT part of the admin sections config because
+          they're browse-affordances, not event lanes. */}
       <Section
         title="Browse Sports by League"
         subtitle="Pick your league — from the World Cup and UCL to the NBA, NFL, F1, UFC, and more."
@@ -81,31 +219,6 @@ export default function Home() {
           ))}
         </div>
       </Section>
-
-      <LiveEventsSection
-        category="concerts"
-        title="Trending Concerts"
-        subtitle="Upcoming tour dates from artists fans are following most."
-        seeAllHref="/concerts"
-        size={16}
-      />
-
-      <LiveEventsSection
-        category="arts"
-        title="Arts & Theater"
-        subtitle="Broadway productions, comedy nights, opera, and live performances."
-        seeAllHref="/arts"
-        background="gray"
-        size={12}
-      />
-
-      <LiveEventsSection
-        category="family"
-        title="Family Events"
-        subtitle="Disney-style experiences, ice shows, circus, and holiday attractions."
-        seeAllHref="/family"
-        size={12}
-      />
 
       <Section
         title="Popular Cities"

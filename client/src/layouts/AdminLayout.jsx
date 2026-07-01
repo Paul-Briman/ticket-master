@@ -5,6 +5,7 @@ import { useAuth } from '../lib/auth.jsx'
 const NAV = [
   { to: '/admin', label: 'Dashboard', end: true, icon: '📊' },
   { to: '/admin/events', label: 'Events', icon: '🎟️' },
+  { to: '/admin/homepage-sections', label: 'Homepage', icon: '🏠' },
   { to: '/admin/promotions', label: 'Promotions', icon: '🏷️' },
   { to: '/admin/users', label: 'Users', icon: '👥' },
   { to: '/admin/orders', label: 'Orders', icon: '🧾' },

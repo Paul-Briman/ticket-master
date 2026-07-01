@@ -25,8 +25,13 @@ export default function LiveEventsSection({
   background,
   size = 16,
   emptyLabel,
+  // When true, the section renders nothing (no title, no cards, no
+  // See All, no spacing) once loading resolves with zero events.
+  // Homepage sets this so the layout closes gaps naturally.
+  hideWhenEmpty = false,
 }) {
   const { events, loading } = useEventList(category, { size })
+  if (hideWhenEmpty && !loading && events.length === 0) return null
 
   const cards = events.map((e) => ({
     ...e,

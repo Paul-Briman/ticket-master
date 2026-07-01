@@ -26,11 +26,17 @@ export default function LiveSportsSection({
   events = [],
   loading = false,
   displaySize = 12,
+  // When true, the section renders nothing (no title, no cards, no
+  // See All, no spacing) once loading resolves with zero events.
+  // Homepage sets this so the layout closes gaps naturally.
+  hideWhenEmpty = false,
 }) {
   const cards = events.slice(0, displaySize).map((e) => ({
     ...e,
     location: e.venue ? `${e.venue}, ${e.city}` : e.city,
   }))
+
+  if (hideWhenEmpty && !loading && cards.length === 0) return null
 
   return (
     <Section

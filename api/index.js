@@ -9,6 +9,7 @@ import adminEventsRouter from '../lib/routes/adminEvents.js'
 import adminUsersRouter from '../lib/routes/adminUsers.js'
 import eventsRouter from '../lib/routes/events.js'
 import promotionsRouter from '../lib/routes/promotions.js'
+import homepageSectionsRouter from '../lib/routes/homepageSections.js'
 
 const app = express()
 
@@ -108,6 +109,7 @@ app.use('/api/admin/users', adminUsersRouter)
 // /api/admin/promotions (admin) under one mount so the router's
 // internal admin sub-router can share validation helpers.
 app.use('/api', promotionsRouter)
+app.use('/api', homepageSectionsRouter)
 
 app.use((req, res) => {
   res.status(404).json({ error: 'Not found', path: req.url })

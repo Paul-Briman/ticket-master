@@ -98,6 +98,16 @@ export const api = {
   adminDeleteEvent: (id) =>
     request(`/api/admin/events/${encodeURIComponent(id)}`, { method: 'DELETE' }),
 
+  // Homepage sections
+  homepageSections: () =>
+    request('/api/homepage-sections', { auth: false }),
+  adminHomepageSections: () => request('/api/admin/homepage-sections'),
+  adminSaveHomepageSections: (sections) =>
+    request('/api/admin/homepage-sections', {
+      method: 'PATCH',
+      body: { sections },
+    }),
+
   // Promotions
   promotions: () => request('/api/promotions', { auth: false }),
   featuredPromotion: () => request('/api/promotions/featured', { auth: false }),
