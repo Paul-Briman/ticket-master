@@ -14,11 +14,11 @@ import PromotionBadge, {
   formatPromotionLabel,
 } from '../components/PromotionBadge.jsx'
 import PromotionCountdown from '../components/PromotionCountdown.jsx'
-import { EVENTS } from '../data/events.js'
 import { formatPrice, getSeatOptions, SERVICE_FEE_RATE } from '../lib/price.js'
 import { recordRecentView } from '../lib/recentlyViewed.js'
 import { parseEventDate } from '../lib/dateParse.js'
 import { useSportsEvents } from '../lib/useSportsEvents.js'
+import { useEventList } from '../lib/useEventList.js'
 import { useEvent } from '../lib/useEvent.js'
 import { isEventExpired, isEventVisible } from '../lib/eventExpiry.js'
 
@@ -49,14 +49,34 @@ export default function EventDetails() {
     setQuantity(1)
   }, [id])
 
-  // IMPORTANT: this hook MUST run on every render — including the
-  // loading/not-found render paths below — so its position in the
-  // hooks order stays stable. Use optional chaining; the hook is
-  // disabled until we have a sports event with a league.
+  // IMPORTANT: these hooks MUST run on every render — including the
+  // loading/not-found render paths below — so their position in the
+  // hooks order stays stable. Both hooks use their `enabled` flag to
+  // short-circuit when the event isn't the matching category yet.
   const isSportsEvent = event?.category === 'sports'
+  const isCuratedCategory =
+    event?.category === 'concerts' ||
+    event?.category === 'arts' ||
+    event?.category === 'family'
+
   const { events: liveRelated } = useSportsEvents(
     { league: event?.league, size: 8 },
     { enabled: !!isSportsEvent && !!event?.league },
+  )
+
+  // Recommendations for concerts / arts / family come from the SAME
+  // backend endpoint that renders the homepage lane — provider +
+  // admin overrides + promotions already applied. Previously we
+  // filtered the raw client-side EVENTS catalog which was pre-
+  // override, so a related-event card could show "Concert A" while
+  // clicking through opened the overridden "Taylor Swift" event.
+  const { events: curatedRelated } = useEventList(
+    // Dummy fallback category when disabled (hook needs a valid
+    // FETCHERS key even though it won't fetch). useEventList exits
+    // early with empty state when enabled=false.
+    isCuratedCategory ? event.category : 'concerts',
+    { size: 8 },
+    { enabled: !!isCuratedCategory },
   )
 
   if (liveLoading) {
@@ -93,13 +113,18 @@ export default function EventDetails() {
   const subtotal = (selectedOption?.price || 0) * quantity
   const total = subtotal + subtotal * SERVICE_FEE_RATE
 
-  // Recommendations — and strip any candidate that's already expired.
+  // Recommendations. Both branches now flow from the SAME backend
+  // pipeline that renders the detail page above — normalize →
+  // admin override merge → promotion decoration → expiry filter —
+  // so a related card never shows stale mock data. Strip the
+  // current event out and cap at 6 cards.
   const related = (isSportsEvent
-    ? liveRelated.filter((e) => e.id !== event.id)
-    : EVENTS.filter(
-        (e) => e.category === event.category && e.id !== event.id,
-      )
+    ? liveRelated
+    : isCuratedCategory
+      ? curatedRelated
+      : []
   )
+    .filter((e) => e.id !== event.id)
     .filter(isEventVisible)
     .slice(0, 6)
 
