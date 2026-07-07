@@ -1,12 +1,23 @@
-// Rasterize client/public/favicon.svg into every browser-required
-// size, build a multi-image favicon.ico, then package the whole set
-// as ticket-master-favicon.zip for handoff.
+// Rebuild every browser-required favicon size from a single source
+// image + package the whole set as ticket-master-favicon.zip.
 //
-// This script is the single source of truth for the favicon set.
-// Whenever the SVG changes, rerun:
-//   node scripts/build-favicon.mjs
+// Source (in order of preference):
+//   1. client/public/favicon-source.png  ← preferred: a user-provided
+//      raster (the current "italic t on blue circle" design).
+//   2. client/public/favicon.svg         ← fallback: vector source.
+//
+// This gives us one script that regenerates the set either from a
+// design PNG the user drops in, or from an SVG we author. Nothing
+// else is touched.
 
-import { readFileSync, writeFileSync, mkdirSync, existsSync, rmSync } from 'node:fs'
+import {
+  readFileSync,
+  writeFileSync,
+  mkdirSync,
+  existsSync,
+  rmSync,
+  createWriteStream,
+} from 'node:fs'
 import { resolve, dirname } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { createRequire } from 'node:module'
@@ -14,53 +25,54 @@ import { createRequire } from 'node:module'
 const __dirname = dirname(fileURLToPath(import.meta.url))
 const require_ = createRequire(import.meta.url)
 
-// Tools live in a shared tmp/ install (see conversation setup).
-// On Windows, `/tmp` resolves to %LOCALAPPDATA%\Temp — use the OS path.
 const TMP_NM =
-  process.platform === 'win32'
-    ? `${process.env.LOCALAPPDATA || process.env.TEMP || 'C:\\Windows\\Temp'}\\Temp\\node_modules`
-    : '/tmp/node_modules'
-// %LOCALAPPDATA% already ends with "\Local", so the double-Temp is wrong.
-// Recompute cleanly from process.env.TEMP.
-const TMP_NM_FIXED =
   process.platform === 'win32' && process.env.TEMP
     ? `${process.env.TEMP}\\node_modules`
-    : TMP_NM
-const sharp = require_(`${TMP_NM_FIXED}\\sharp`)
-// png-to-ico v3 is native ESM with a default export — require() returns
-// a module namespace object; the callable lives on `.default`.
-const pngToIcoModule = require_(`${TMP_NM_FIXED}\\png-to-ico`)
+    : '/tmp/node_modules'
+const sharp = require_(`${TMP_NM}\\sharp`)
+const pngToIcoModule = require_(`${TMP_NM}\\png-to-ico`)
 const pngToIco = pngToIcoModule.default || pngToIcoModule
-// archiver v8 is native ESM with named class exports — use ZipArchive
-// directly rather than the legacy factory function shape.
-const archiverModule = require_(`${TMP_NM_FIXED}\\archiver`)
-const ZipArchive = archiverModule.ZipArchive
+const ZipArchive = require_(`${TMP_NM}\\archiver`).ZipArchive
 
 const ROOT = resolve(__dirname, '..')
-const SRC = resolve(ROOT, 'client/public/favicon.svg')
 const PUBLIC_DIR = resolve(ROOT, 'client/public')
+const PNG_SRC = resolve(PUBLIC_DIR, 'favicon-source.png')
+const SVG_SRC = resolve(PUBLIC_DIR, 'favicon.svg')
 const ZIP_DIR = resolve(ROOT, 'dist-favicon')
 const ZIP_STAGE = resolve(ZIP_DIR, 'ticket-master-favicon')
 const ZIP_OUT = resolve(ZIP_DIR, 'ticket-master-favicon.zip')
 
-console.log('Building favicon set from', SRC)
-if (!existsSync(SRC)) {
-  console.error('Source SVG not found — nothing to build.')
+// -------------------------------------------------------------
+// 1. Pick a source. Prefer PNG (user-provided) over SVG.
+// -------------------------------------------------------------
+let sourceBuf
+let sourceLabel
+if (existsSync(PNG_SRC)) {
+  sourceBuf = readFileSync(PNG_SRC)
+  sourceLabel = 'favicon-source.png'
+} else if (existsSync(SVG_SRC)) {
+  sourceBuf = readFileSync(SVG_SRC)
+  sourceLabel = 'favicon.svg'
+} else {
+  console.error(
+    'No source found. Provide either client/public/favicon-source.png ' +
+      'or client/public/favicon.svg.',
+  )
   process.exit(1)
 }
 
-const svg = readFileSync(SRC)
+const meta = await sharp(sourceBuf).metadata()
+console.log(`Building from ${sourceLabel} — ${meta.format} ${meta.width}x${meta.height}`)
 
 // -------------------------------------------------------------
-// 1. Rasterize all PNG sizes.
+// 2. Rasterize all PNG sizes.
 // -------------------------------------------------------------
-// Sharp uses librsvg under the hood — the SVG is rendered at its
-// declared viewBox and then resized to the target dimensions with
-// Lanczos3 downsampling, which keeps the crisp T sharp even at
-// 16×16. density=384 forces a higher internal DPI so the raster
-// doesn't quantize the geometry before Sharp resamples.
+// density=384 only matters for SVG rasterization (forces high internal
+// DPI so the shape is sampled at a large enough resolution before
+// Sharp downsamples). It's a no-op for PNG input. Lanczos3 for the
+// resize kernel keeps curves crisp at 16x16.
 async function raster(size) {
-  return sharp(svg, { density: 384 })
+  return sharp(sourceBuf, { density: 384 })
     .resize(size, size, { fit: 'contain', kernel: sharp.kernel.lanczos3 })
     .png({ compressionLevel: 9 })
     .toBuffer()
@@ -70,11 +82,11 @@ const sizes = [16, 32, 48, 180]
 const buffers = {}
 for (const s of sizes) {
   buffers[s] = await raster(s)
-  console.log(`  · rasterized ${s}×${s} → ${buffers[s].length} bytes`)
+  console.log(`  · rasterized ${s}x${s} → ${buffers[s].length} bytes`)
 }
 
 // -------------------------------------------------------------
-// 2. Write PNG outputs into client/public/ so Vite serves them.
+// 3. Write PNG outputs into client/public/ so Vite serves them.
 // -------------------------------------------------------------
 const publicWrites = [
   ['favicon-16x16.png', buffers[16]],
@@ -87,15 +99,14 @@ for (const [name, buf] of publicWrites) {
 }
 
 // -------------------------------------------------------------
-// 3. Build multi-image favicon.ico (16 + 32 + 48).
+// 4. Build multi-image favicon.ico (16 + 32 + 48).
 // -------------------------------------------------------------
 const icoBuf = await pngToIco([buffers[16], buffers[32], buffers[48]])
 writeFileSync(resolve(PUBLIC_DIR, 'favicon.ico'), icoBuf)
 console.log(`  · built favicon.ico (16+32+48) → ${icoBuf.length} bytes`)
 
 // -------------------------------------------------------------
-// 4. Stage a copy of every artifact into dist-favicon/ticket-master-favicon
-//    and zip it as ticket-master-favicon.zip for handoff.
+// 5. Stage + zip.
 // -------------------------------------------------------------
 if (existsSync(ZIP_STAGE)) rmSync(ZIP_STAGE, { recursive: true, force: true })
 mkdirSync(ZIP_STAGE, { recursive: true })
@@ -104,24 +115,28 @@ writeFileSync(resolve(ZIP_STAGE, 'favicon-16x16.png'), buffers[16])
 writeFileSync(resolve(ZIP_STAGE, 'favicon-32x32.png'), buffers[32])
 writeFileSync(resolve(ZIP_STAGE, 'favicon-48x48.png'), buffers[48])
 writeFileSync(resolve(ZIP_STAGE, 'apple-touch-icon.png'), buffers[180])
-writeFileSync(resolve(ZIP_STAGE, 'favicon.svg'), svg)
+if (sourceLabel === 'favicon-source.png') {
+  writeFileSync(resolve(ZIP_STAGE, 'favicon-source.png'), sourceBuf)
+}
+if (existsSync(SVG_SRC)) {
+  writeFileSync(resolve(ZIP_STAGE, 'favicon.svg'), readFileSync(SVG_SRC))
+}
 writeFileSync(
   resolve(ZIP_STAGE, 'README.md'),
   [
     '# Ticket Master favicon set',
     '',
-    'Blue #2563EB background, white geometric T.',
+    'Blue circle background, white italic lowercase "t".',
     '',
     'Files:',
-    '- `favicon.ico` — multi-image (16 / 32 / 48). Use as legacy fallback.',
+    '- `favicon.ico` — multi-image (16 / 32 / 48). Legacy fallback.',
     '- `favicon-16x16.png`, `favicon-32x32.png`, `favicon-48x48.png` — modern browsers.',
-    '- `apple-touch-icon.png` (180×180) — iOS home-screen bookmark.',
-    '- `favicon.svg` — vector source. Serve directly if you want a resolution-independent favicon.',
+    '- `apple-touch-icon.png` (180x180) — iOS home-screen bookmark.',
+    '- `favicon-source.png` — high-res source used to generate every other file.',
     '',
     'Recommended `<head>`:',
     '',
     '```html',
-    '<link rel="icon" type="image/svg+xml" href="/favicon.svg" />',
     '<link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png" />',
     '<link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png" />',
     '<link rel="icon" type="image/png" sizes="48x48" href="/favicon-48x48.png" />',
@@ -133,7 +148,7 @@ writeFileSync(
 )
 
 await new Promise((resolvePromise, rejectPromise) => {
-  const output = require_('node:fs').createWriteStream(ZIP_OUT)
+  const output = createWriteStream(ZIP_OUT)
   const archive = new ZipArchive({ zlib: { level: 9 } })
   output.on('close', () => {
     console.log(`  · zipped → ${ZIP_OUT} (${archive.pointer()} bytes)`)
@@ -147,7 +162,5 @@ await new Promise((resolvePromise, rejectPromise) => {
 
 console.log()
 console.log('Done.')
-console.log('Public assets:')
-console.log('  ', PUBLIC_DIR)
-console.log('Zip handoff:')
-console.log('  ', ZIP_OUT)
+console.log('Public assets:', PUBLIC_DIR)
+console.log('Zip handoff:  ', ZIP_OUT)
