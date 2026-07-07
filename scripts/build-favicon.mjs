@@ -65,6 +65,95 @@ const meta = await sharp(sourceBuf).metadata()
 console.log(`Building from ${sourceLabel} — ${meta.format} ${meta.width}x${meta.height}`)
 
 // -------------------------------------------------------------
+// 1b. If the source has an opaque white background around the
+// artwork (i.e. it's a solid design on a white square), auto-mask
+// everything outside the detected circular artwork to transparent.
+// Cheap heuristic: if all four corner pixels are near-white AND
+// the alpha channel is missing or fully opaque, run the mask.
+// -------------------------------------------------------------
+async function autoMaskCircle(inputBuf) {
+  const { data, info } = await sharp(inputBuf).ensureAlpha().raw().toBuffer({
+    resolveWithObject: true,
+  })
+  const { width, height, channels } = info
+
+  // Corner check — are all four corners near-white + opaque?
+  const NEAR_WHITE = 240
+  const cornerAt = (x, y) => {
+    const i = (y * width + x) * channels
+    return { r: data[i], g: data[i + 1], b: data[i + 2], a: data[i + 3] }
+  }
+  const corners = [
+    cornerAt(0, 0),
+    cornerAt(width - 1, 0),
+    cornerAt(0, height - 1),
+    cornerAt(width - 1, height - 1),
+  ]
+  const allWhiteCorners = corners.every(
+    (c) => c.r >= NEAR_WHITE && c.g >= NEAR_WHITE && c.b >= NEAR_WHITE && c.a >= 250,
+  )
+  if (!allWhiteCorners) {
+    console.log('  · source already has transparent/non-white background — skipping mask')
+    return inputBuf
+  }
+
+  // Find bounding box of non-white pixels — this outlines the artwork
+  // (the blue circle in our case; anti-aliased edge pixels count too).
+  let minX = width, minY = height, maxX = 0, maxY = 0
+  for (let y = 0; y < height; y++) {
+    for (let x = 0; x < width; x++) {
+      const i = (y * width + x) * channels
+      const r = data[i], g = data[i + 1], b = data[i + 2]
+      if (r < NEAR_WHITE || g < NEAR_WHITE || b < NEAR_WHITE) {
+        if (x < minX) minX = x
+        if (x > maxX) maxX = x
+        if (y < minY) minY = y
+        if (y > maxY) maxY = y
+      }
+    }
+  }
+  const cx = (minX + maxX) / 2
+  const cy = (minY + maxY) / 2
+  // Radius = larger half-side so a slightly-non-square bounding box
+  // (e.g. from anti-aliasing) doesn't clip the artwork.
+  const radius = Math.max((maxX - minX) / 2, (maxY - minY) / 2)
+  console.log(
+    `  · detected circular artwork: center=(${cx.toFixed(0)},${cy.toFixed(
+      0,
+    )}) radius=${radius.toFixed(0)} — masking to transparent circle`,
+  )
+
+  // Build a new RGBA buffer. Soft 2-pixel anti-aliased edge so the
+  // circle boundary reads clean at every downsampled size.
+  const AA = 2
+  const rgba = Buffer.alloc(width * height * 4)
+  for (let y = 0; y < height; y++) {
+    for (let x = 0; x < width; x++) {
+      const srcIdx = (y * width + x) * channels
+      const dstIdx = (y * width + x) * 4
+      const dx = x - cx
+      const dy = y - cy
+      const dist = Math.sqrt(dx * dx + dy * dy)
+      let alpha
+      if (dist <= radius - AA) alpha = 255
+      else if (dist >= radius + AA) alpha = 0
+      else alpha = Math.round((255 * (radius + AA - dist)) / (2 * AA))
+      rgba[dstIdx] = data[srcIdx]
+      rgba[dstIdx + 1] = data[srcIdx + 1]
+      rgba[dstIdx + 2] = data[srcIdx + 2]
+      rgba[dstIdx + 3] = alpha
+    }
+  }
+  return sharp(rgba, { raw: { width, height, channels: 4 } })
+    .png({ compressionLevel: 9 })
+    .toBuffer()
+}
+
+if (sourceLabel === 'favicon-source.png') {
+  sourceBuf = await autoMaskCircle(sourceBuf)
+}
+
+// -------------------------------------------------------------
 // 2. Rasterize all PNG sizes.
 // -------------------------------------------------------------
 // density=384 only matters for SVG rasterization (forces high internal
