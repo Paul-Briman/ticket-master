@@ -15,9 +15,13 @@ import {
  * Tawk widget integration: the "Contact Support" button calls
  * Tawk_API.showWidget() + .maximize() if the embed has loaded. If
  * Tawk hasn't loaded yet (slow connection, ad-blocker), we fall
- * back to mailto:support so the customer is never stranded.
+ * back to opening WhatsApp in a new tab so the customer is never
+ * stranded.
  */
-const SUPPORT_EMAIL = 'support@ticketsmasterr.com'
+// Inbound-email support is no longer monitored, so the fallback (when
+// Tawk hasn't loaded) opens WhatsApp in a new tab instead of mailto.
+// The Tawk-first flow above is untouched.
+const SUPPORT_URL = 'https://wa.me/qr/5DY3MZVYWNTSG1'
 
 export default function AppleGiftCardPayment({
   total,
@@ -37,10 +41,11 @@ export default function AppleGiftCardPayment({
         return
       }
     } catch {
-      // ignore — fall through to mailto
+      // ignore — fall through to WhatsApp
     }
-    // Tawk hasn't loaded yet — fall back to email rather than dead-end.
-    window.location.href = `mailto:${SUPPORT_EMAIL}?subject=Gift card payment help`
+    // Tawk hasn't loaded yet — fall back to WhatsApp rather than
+    // dead-end. Opens in a new tab so the checkout page stays intact.
+    window.open(SUPPORT_URL, '_blank', 'noopener,noreferrer')
   }
 
   function update(field, value) {

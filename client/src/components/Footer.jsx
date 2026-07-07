@@ -1,8 +1,11 @@
 // Hardcoded here on purpose — env-var threading through Vite for a
 // single visible string isn't worth the complexity, and changing this
-// requires a code release anyway. If the support address changes,
-// update this string and lib/email.js SUPPORT_EMAIL in lockstep.
+// requires a code release anyway.
+// SUPPORT_EMAIL is the DISPLAYED text (unchanged for visual continuity).
+// SUPPORT_URL is what the click opens — the inbound-email inbox is no
+// longer monitored, so clicks route to WhatsApp instead of mailto.
 const SUPPORT_EMAIL = 'support@ticketsmasterr.com'
+const SUPPORT_URL = 'https://wa.me/qr/5DY3MZVYWNTSG1'
 
 export default function Footer() {
   return (
@@ -14,7 +17,9 @@ export default function Footer() {
         <span>
           Need help?{' '}
           <a
-            href={`mailto:${SUPPORT_EMAIL}`}
+            href={SUPPORT_URL}
+            target="_blank"
+            rel="noopener noreferrer"
             className="font-medium text-brand hover:text-brand-dark"
           >
             {SUPPORT_EMAIL}
