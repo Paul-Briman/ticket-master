@@ -1,6 +1,9 @@
 node_modules
 dist
 dist-ssr
+# Favicon staging + zip output — regenerate anytime via
+# `node scripts/build-favicon.mjs` from client/public/favicon.svg.
+dist-favicon
 .env
 .env.local
 .DS_Store
