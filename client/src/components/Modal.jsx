@@ -27,6 +27,26 @@ export default function Modal({ open, onClose, title, children, footer }) {
         role="dialog"
         aria-modal="true"
         className="relative z-10 flex max-h-[92vh] w-full max-w-lg flex-col rounded-t-2xl border border-gray-200 bg-white shadow-xl sm:rounded-lg"
+        onMouseDown={(e) => {
+          // When a mousedown lands INSIDE the modal but OUTSIDE any
+          // interactive control (padding, section dividers, gaps),
+          // blur any currently focused input. That dismisses browser-
+          // owned popovers still hanging around — <datalist>
+          // autocomplete, <input type="date">/datetime-local pickers,
+          // native <select> dropdowns — that don't always close on
+          // their own when the user clicks elsewhere inside a modal.
+          const t = e.target
+          if (
+            t &&
+            typeof t.closest === 'function' &&
+            !t.closest('input, select, textarea, button, [tabindex], label, a')
+          ) {
+            const active = document.activeElement
+            if (active && active !== document.body && typeof active.blur === 'function') {
+              active.blur()
+            }
+          }
+        }}
       >
         {title && (
           <header className="flex items-center justify-between border-b border-gray-100 px-4 py-3 sm:px-5 sm:py-4">

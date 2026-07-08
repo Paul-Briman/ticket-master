@@ -3,7 +3,11 @@ import { isEventVisible } from './eventExpiry.js'
 import { api } from './api.js'
 
 const KEY = 'tm_recently_viewed'
-const MAX = 12
+// Homepage lane caps at 8 recent events. Adding a 9th shoves the
+// oldest one off the end (list.slice(0, MAX)). recordRecentView
+// already dedupes by id + moves an existing entry back to the top,
+// so re-viewing an event doesn't grow the list.
+const MAX = 8
 
 // Fields we snapshot into localStorage. Kept minimal so the shrunk
 // entry stays small; must include everything <EventCard/> reads so

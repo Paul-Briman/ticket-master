@@ -42,6 +42,19 @@ const BADGE_TYPES = [
   { key: 'new', label: 'New' },
 ]
 
+// Keep in lockstep with EventOverrideForm.HOMEPAGE_SECTIONS and the
+// backend homepage-sections canonical set.
+const HOMEPAGE_SECTIONS = [
+  { key: '', label: '— Pick a section —' },
+  { key: 'world-cup-knockout', label: 'Knockout World Cup Matches' },
+  { key: 'ucl', label: 'Champions League' },
+  { key: 'nba', label: 'NBA Matchups' },
+  { key: 'featured-sports', label: 'Featured Sports' },
+  { key: 'concerts', label: 'Trending Concerts' },
+  { key: 'arts', label: 'Arts & Theater' },
+  { key: 'family', label: 'Family Events' },
+]
+
 const EMPTY = {
   title: '',
   description: '',
@@ -61,6 +74,8 @@ const EMPTY = {
   badge: '',
   badgeType: '',
   featured: false,
+  featuredSection: '',
+  featuredOrder: '',
   soldOut: false,
   pricing: { standard: '', premium: '', vip: '' },
 }
@@ -140,6 +155,11 @@ export default function CreateEventForm({ open, onClose, onCreated }) {
       badge: form.badge.trim() || undefined,
       badgeType: form.badgeType || undefined,
       featured: !!form.featured,
+      featuredSection: form.featured ? form.featuredSection || null : null,
+      featuredOrder:
+        form.featured && String(form.featuredOrder ?? '').trim() !== ''
+          ? Number(form.featuredOrder)
+          : null,
       soldOut: !!form.soldOut,
       pricing: { standard, premium, vip },
     }
@@ -404,7 +424,7 @@ export default function CreateEventForm({ open, onClose, onCreated }) {
                 onChange={(e) => update('featured', e.target.checked)}
                 className="h-4 w-4 rounded border-gray-300 text-brand focus:ring-brand"
               />
-              Featured (boosted on public lists)
+              Feature on Homepage
             </label>
             <label className="flex items-center gap-2 text-sm text-gray-700">
               <input
@@ -416,6 +436,37 @@ export default function CreateEventForm({ open, onClose, onCreated }) {
               Sold out
             </label>
           </div>
+
+          {form.featured && (
+            <div className="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-2">
+              <label className="flex flex-col gap-1.5">
+                <span className="text-xs font-semibold uppercase tracking-wide text-gray-500">
+                  Homepage Section
+                </span>
+                <select
+                  value={form.featuredSection}
+                  onChange={(e) => update('featuredSection', e.target.value)}
+                  className="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 focus:border-brand focus:outline-none focus:ring-2 focus:ring-brand/30"
+                >
+                  {HOMEPAGE_SECTIONS.map((s) => (
+                    <option key={s.key} value={s.key}>{s.label}</option>
+                  ))}
+                </select>
+              </label>
+              <label className="flex flex-col gap-1.5">
+                <span className="text-xs font-semibold uppercase tracking-wide text-gray-500">
+                  Featured Order (optional, lower = first)
+                </span>
+                <input
+                  type="number"
+                  placeholder="1"
+                  value={form.featuredOrder}
+                  onChange={(e) => update('featuredOrder', e.target.value)}
+                  className="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 placeholder-gray-400 focus:border-brand focus:outline-none focus:ring-2 focus:ring-brand/30"
+                />
+              </label>
+            </div>
+          )}
         </div>
 
         <Input

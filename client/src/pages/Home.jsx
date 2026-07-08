@@ -29,6 +29,39 @@ const DEDICATED_SPORTS_LEAGUES = {
   nba: 'nba',
 }
 
+// Sort helper: within a given section's event pool, events with
+// featured=true AND featuredSection===sectionKey rise to the top.
+// featuredOrder ascending (numeric) controls their internal order;
+// featured items without a numeric featuredOrder appear after those
+// with one, but still ahead of every non-featured event. Non-featured
+// events keep the natural order the caller already sorted them into.
+// When no event is featured for the section, output === input (fall-
+// back to automatic behavior — homepage never appears empty).
+function sortFeaturedFirst(events, sectionKey) {
+  if (!Array.isArray(events) || events.length === 0) return events
+  const featured = []
+  const other = []
+  for (const e of events) {
+    if (e?.featured === true && e?.featuredSection === sectionKey) {
+      featured.push(e)
+    } else {
+      other.push(e)
+    }
+  }
+  if (featured.length === 0) return events
+  featured.sort((a, b) => {
+    const ao = Number(a?.featuredOrder)
+    const bo = Number(b?.featuredOrder)
+    const aHas = Number.isFinite(ao)
+    const bHas = Number.isFinite(bo)
+    if (aHas && bHas) return ao - bo
+    if (aHas) return -1
+    if (bHas) return 1
+    return 0 // both unordered — preserve incoming relative order
+  })
+  return [...featured, ...other]
+}
+
 export default function Home() {
   const { recent } = useRecentlyViewed()
   const recentEvents = recent
@@ -69,7 +102,10 @@ export default function Home() {
 
     switch (cfg.key) {
       case 'world-cup-knockout': {
-        const events = sportsByLeague.byLeague['world-cup'] || []
+        const events = sortFeaturedFirst(
+          sportsByLeague.byLeague['world-cup'] || [],
+          cfg.key,
+        )
         return (
           <LiveSportsSection
             key={cfg.key}
@@ -84,7 +120,10 @@ export default function Home() {
         )
       }
       case 'ucl': {
-        const events = sportsByLeague.byLeague.ucl || []
+        const events = sortFeaturedFirst(
+          sportsByLeague.byLeague.ucl || [],
+          cfg.key,
+        )
         return (
           <LiveSportsSection
             key={cfg.key}
@@ -99,7 +138,10 @@ export default function Home() {
         )
       }
       case 'nba': {
-        const events = sportsByLeague.byLeague.nba || []
+        const events = sortFeaturedFirst(
+          sportsByLeague.byLeague.nba || [],
+          cfg.key,
+        )
         return (
           <LiveSportsSection
             key={cfg.key}
@@ -114,13 +156,14 @@ export default function Home() {
         )
       }
       case 'featured-sports': {
+        const events = sortFeaturedFirst(featuredSportsEvents, cfg.key)
         return (
           <LiveSportsSection
             key={cfg.key}
             title={meta.title}
             subtitle={meta.subtitle}
             seeAllHref={meta.seeAllHref}
-            events={featuredSportsEvents}
+            events={events}
             loading={sportsByLeague.loading}
             displaySize={limit}
             background="gray"
@@ -142,11 +185,10 @@ export default function Home() {
             // when the admin has reduced the limit. size is passed
             // through to /api/{category}?size=…
             size={limit}
-            // Alternate gray background for visual rhythm — the
-            // pattern was odd/even in the old hardcoded layout. Since
-            // the order is now dynamic, we hand this off to the
-            // rendered list below via array index instead of naming
-            // it here.
+            // Pin admin-featured events at the top of the lane.
+            // LiveEventsSection knows to apply sortFeaturedFirst
+            // internally when featuredSectionKey is provided.
+            featuredSectionKey={cfg.key}
             hideWhenEmpty
           />
         )
