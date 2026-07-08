@@ -98,6 +98,12 @@ export const api = {
   adminDeleteEvent: (id) =>
     request(`/api/admin/events/${encodeURIComponent(id)}`, { method: 'DELETE' }),
 
+  // Homepage — every event currently marked featured=true, decorated
+  // (promotion + expiry filter). Home.jsx uses this to render "if any
+  // featured events exist for a section, show ONLY those."
+  homepageFeatured: () =>
+    request('/api/events/homepage-featured', { auth: false }),
+
   // Homepage sections
   homepageSections: () =>
     request('/api/homepage-sections', { auth: false }),

@@ -4,38 +4,6 @@ import CardScroller from './CardScroller.jsx'
 import { SkeletonCard } from './Skeleton.jsx'
 import { useEventList } from '../lib/useEventList.js'
 
-// Duplicates Home.jsx's sortFeaturedFirst — kept local so the
-// component can be dropped anywhere without a Home-specific import.
-// Featured events for `sectionKey` rise to the top, sorted by numeric
-// featuredOrder ascending; featured items without a numeric order sit
-// after ordered ones but before every non-featured event. Non-featured
-// events preserve their natural order. When nothing is featured for
-// the section, output === input (automatic fallback).
-function sortByFeatured(events, sectionKey) {
-  if (!Array.isArray(events) || events.length === 0) return events
-  const featured = []
-  const other = []
-  for (const e of events) {
-    if (e?.featured === true && e?.featuredSection === sectionKey) {
-      featured.push(e)
-    } else {
-      other.push(e)
-    }
-  }
-  if (featured.length === 0) return events
-  featured.sort((a, b) => {
-    const ao = Number(a?.featuredOrder)
-    const bo = Number(b?.featuredOrder)
-    const aHas = Number.isFinite(ao)
-    const bHas = Number.isFinite(bo)
-    if (aHas && bHas) return ao - bo
-    if (aHas) return -1
-    if (bHas) return 1
-    return 0
-  })
-  return [...featured, ...other]
-}
-
 function EmptyState({ label }) {
   return (
     <div className="rounded-lg border border-dashed border-gray-300 bg-white px-6 py-12 text-center">
@@ -61,19 +29,11 @@ export default function LiveEventsSection({
   // See All, no spacing) once loading resolves with zero events.
   // Homepage sets this so the layout closes gaps naturally.
   hideWhenEmpty = false,
-  // When set, admin-featured events for THIS section key rise to the
-  // top of the lane, sorted by featuredOrder ascending. Unfeatured
-  // events keep the natural order below.
-  featuredSectionKey,
 }) {
   const { events, loading } = useEventList(category, { size })
   if (hideWhenEmpty && !loading && events.length === 0) return null
 
-  // Apply featured-first ordering if the caller asked for it.
-  const ordered = featuredSectionKey
-    ? sortByFeatured(events, featuredSectionKey)
-    : events
-  const cards = ordered.map((e) => ({
+  const cards = events.map((e) => ({
     ...e,
     location: e.venue ? `${e.venue}, ${e.city}` : e.city,
   }))

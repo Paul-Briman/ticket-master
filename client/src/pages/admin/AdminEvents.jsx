@@ -5,6 +5,7 @@ import Button from '../../components/Button.jsx'
 import { api } from '../../lib/api.js'
 import { SkeletonRow } from '../../components/Skeleton.jsx'
 import { invalidateEventCache } from '../../lib/useEvent.js'
+import { invalidateHomepageFeaturedCache } from '../../lib/useHomepageFeatured.js'
 import { invalidateSportsEventsCache } from '../../lib/useSportsEvents.js'
 import { invalidateEventListCache } from '../../lib/useEventList.js'
 
@@ -15,6 +16,10 @@ function invalidateAllPublicCaches(eventId) {
   invalidateEventCache(eventId)
   invalidateSportsEventsCache()
   invalidateEventListCache()
+  // Also bust the homepage-featured cache so an admin's "Feature on
+  // Homepage" toggle surfaces on the very next Home mount instead of
+  // waiting out the module cache + 30s CDN TTL.
+  invalidateHomepageFeaturedCache()
 }
 
 const CATEGORY_LABELS = {
