@@ -1,3 +1,4 @@
+import { useMemo } from 'react'
 import Section from './Section.jsx'
 import EventCard from './EventCard.jsx'
 import CardScroller from './CardScroller.jsx'
@@ -17,6 +18,32 @@ function EmptyState({ label }) {
   )
 }
 
+// Merge admin-featured events into the natural fetch pool per the
+// "Feature on Homepage" spec:
+//   · Featured events come FIRST, sorted by numeric featuredOrder
+//     ascending (unordered entries after ordered ones).
+//   · Natural pool comes next, minus any id already present in the
+//     featured prefix so an event never appears twice.
+//   · Final slice to `size` happens in the render path — H naturally
+//     rolls off the tail once a featured entry is prepended.
+function mergeFeaturedThenNatural(featured, natural) {
+  const naturalArr = Array.isArray(natural) ? natural : []
+  if (!Array.isArray(featured) || featured.length === 0) return naturalArr
+  const sorted = featured.slice().sort((a, b) => {
+    const ao = Number(a?.featuredOrder)
+    const bo = Number(b?.featuredOrder)
+    const aHas = Number.isFinite(ao)
+    const bHas = Number.isFinite(bo)
+    if (aHas && bHas) return ao - bo
+    if (aHas) return -1
+    if (bHas) return 1
+    return 0
+  })
+  const featuredIds = new Set(sorted.map((e) => e?.id).filter(Boolean))
+  const deduped = naturalArr.filter((e) => e?.id && !featuredIds.has(e.id))
+  return [...sorted, ...deduped]
+}
+
 export default function LiveEventsSection({
   category,
   title,
@@ -25,15 +52,30 @@ export default function LiveEventsSection({
   background,
   size = 16,
   emptyLabel,
+  // Admin-featured events for THIS lane (already scoped by
+  // featuredSection at the call site). When non-empty they are
+  // prepended to the natural fetch, deduplicated by id, and the
+  // final list is capped at `size` — so featuring event X pushes
+  // the last natural card off the end rather than replacing the
+  // section wholesale. Empty array = pure automatic behavior.
+  prependEvents,
   // When true, the section renders nothing (no title, no cards, no
   // See All, no spacing) once loading resolves with zero events.
   // Homepage sets this so the layout closes gaps naturally.
   hideWhenEmpty = false,
 }) {
   const { events, loading } = useEventList(category, { size })
-  if (hideWhenEmpty && !loading && events.length === 0) return null
 
-  const cards = events.map((e) => ({
+  // Merge featured-prepended list, then cap at the configured display
+  // limit. Memoized so we don't re-sort on every parent render.
+  const merged = useMemo(() => {
+    const combined = mergeFeaturedThenNatural(prependEvents, events)
+    return combined.slice(0, size)
+  }, [prependEvents, events, size])
+
+  if (hideWhenEmpty && !loading && merged.length === 0) return null
+
+  const cards = merged.map((e) => ({
     ...e,
     location: e.venue ? `${e.venue}, ${e.city}` : e.city,
   }))

@@ -30,34 +30,37 @@ const DEDICATED_SPORTS_LEAGUES = {
   nba: 'nba',
 }
 
-// Section-fill rule per the spec:
-//   · If ANY event is featured for this section, the lane is
-//     populated with ONLY those featured events, sorted by numeric
-//     featuredOrder ascending. Unordered featured entries come after
-//     ordered ones. The section's Homepage Display Limit still caps.
-//   · If NO event is featured for this section, fall back to the
-//     natural (automatic) event pool the section normally shows.
+// Merge rule per the spec:
+//   · Featured events for this section come FIRST, sorted by numeric
+//     featuredOrder ascending (unordered entries after ordered ones).
+//   · The natural (automatic) pool comes after, minus any event id
+//     already present in the featured prefix (no duplicates).
+//   · Downstream, LiveSportsSection / LiveEventsSection slices to the
+//     admin's Homepage Display Limit — so H is naturally pushed off
+//     the end when the prefix grows.
 //
-// `featuredForSection` is pre-filtered by the caller — Home.jsx uses
-// useHomepageFeatured() which fetches every currently-featured event
-// globally, then filters to the ones whose featuredSection matches
-// this lane's key. That way a featured concert can pin regardless of
-// its position in the natural /api/concerts pool.
-function fillFromFeaturedOrNatural(featuredForSection, naturalPool) {
-  if (Array.isArray(featuredForSection) && featuredForSection.length > 0) {
-    const sorted = featuredForSection.slice().sort((a, b) => {
-      const ao = Number(a?.featuredOrder)
-      const bo = Number(b?.featuredOrder)
-      const aHas = Number.isFinite(ao)
-      const bHas = Number.isFinite(bo)
-      if (aHas && bHas) return ao - bo
-      if (aHas) return -1
-      if (bHas) return 1
-      return 0
-    })
-    return sorted
+// Automatic selection logic itself is untouched — this helper never
+// looks at or filters the natural pool, only prepends featured to it.
+// If `featuredForSection` is empty, output is the natural pool
+// unchanged (automatic fallback).
+function mergeFeaturedThenNatural(featuredForSection, naturalPool) {
+  const natural = Array.isArray(naturalPool) ? naturalPool : []
+  if (!Array.isArray(featuredForSection) || featuredForSection.length === 0) {
+    return natural
   }
-  return naturalPool
+  const sorted = featuredForSection.slice().sort((a, b) => {
+    const ao = Number(a?.featuredOrder)
+    const bo = Number(b?.featuredOrder)
+    const aHas = Number.isFinite(ao)
+    const bHas = Number.isFinite(bo)
+    if (aHas && bHas) return ao - bo
+    if (aHas) return -1
+    if (bHas) return 1
+    return 0
+  })
+  const featuredIds = new Set(sorted.map((e) => e?.id).filter(Boolean))
+  const dedupedNatural = natural.filter((e) => e?.id && !featuredIds.has(e.id))
+  return [...sorted, ...dedupedNatural]
 }
 
 export default function Home() {
@@ -120,7 +123,7 @@ export default function Home() {
 
     switch (cfg.key) {
       case 'world-cup-knockout': {
-        const events = fillFromFeaturedOrNatural(
+        const events = mergeFeaturedThenNatural(
           featuredForThis,
           sportsByLeague.byLeague['world-cup'] || [],
         )
@@ -138,7 +141,7 @@ export default function Home() {
         )
       }
       case 'ucl': {
-        const events = fillFromFeaturedOrNatural(
+        const events = mergeFeaturedThenNatural(
           featuredForThis,
           sportsByLeague.byLeague.ucl || [],
         )
@@ -156,7 +159,7 @@ export default function Home() {
         )
       }
       case 'nba': {
-        const events = fillFromFeaturedOrNatural(
+        const events = mergeFeaturedThenNatural(
           featuredForThis,
           sportsByLeague.byLeague.nba || [],
         )
@@ -174,7 +177,7 @@ export default function Home() {
         )
       }
       case 'featured-sports': {
-        const events = fillFromFeaturedOrNatural(
+        const events = mergeFeaturedThenNatural(
           featuredForThis,
           featuredSportsEvents,
         )
@@ -195,25 +198,12 @@ export default function Home() {
       case 'concerts':
       case 'arts':
       case 'family': {
-        // When any featured event exists for this lane, use ONLY
-        // them (via LiveSportsSection which takes a pre-built events
-        // array). Otherwise use the natural per-category fetch via
-        // LiveEventsSection.
-        if (featuredForThis.length > 0) {
-          const events = fillFromFeaturedOrNatural(featuredForThis, [])
-          return (
-            <LiveSportsSection
-              key={cfg.key}
-              title={meta.title}
-              subtitle={meta.subtitle}
-              seeAllHref={meta.seeAllHref}
-              events={events}
-              loading={false}
-              displaySize={limit}
-              hideWhenEmpty
-            />
-          )
-        }
+        // LiveEventsSection owns the natural per-category fetch
+        // (useEventList under the hood). We pass any admin-featured
+        // events for this lane via `prependEvents`; the component
+        // dedupes them out of its natural pool and prepends. The
+        // existing `size` slice still applies — H rolls off the end
+        // once X is inserted at the top.
         return (
           <LiveEventsSection
             key={cfg.key}
@@ -222,6 +212,7 @@ export default function Home() {
             subtitle={meta.subtitle}
             seeAllHref={meta.seeAllHref}
             size={limit}
+            prependEvents={featuredForThis}
             hideWhenEmpty
           />
         )
