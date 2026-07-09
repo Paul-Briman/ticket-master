@@ -28,6 +28,7 @@ import AdminUsers from './pages/admin/AdminUsers.jsx'
 import AdminOrders from './pages/admin/AdminOrders.jsx'
 import AdminPromotions from './pages/admin/AdminPromotions.jsx'
 import AdminHomepageSections from './pages/admin/AdminHomepageSections.jsx'
+import { Analytics } from '@vercel/analytics/react'
 
 export default function App() {
   return (
@@ -109,6 +110,11 @@ export default function App() {
       {/* Tawk.to live chat — mounted once at the app root, outside the
           Routes so it persists across navigation without re-loading. */}
       <TawkChat />
+
+      {/* Vercel Web Analytics — page-view + custom-event beacon. Renders
+          nothing in the DOM; auto-disables in dev so it only fires on
+          the deployed origin. */}
+      <Analytics />
     </>
   )
 }
